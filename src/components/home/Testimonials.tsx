@@ -57,19 +57,19 @@ export default function Testimonials() {
           <div className="mt-6 flex items-center justify-center gap-4">
             <button
               onClick={prev}
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 transition hover:bg-brand-teal hover:text-white hover:border-brand-teal"
+              className="flex h-12 w-12 sm:h-10 sm:w-10 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 transition hover:bg-brand-teal hover:text-white hover:border-brand-teal active:bg-brand-teal/10"
               aria-label="Previous testimonial"
             >
               <ChevronLeft className="h-5 w-5" />
             </button>
 
-            <div className="flex gap-2">
+            <div className="flex gap-3 sm:gap-2">
               {TESTIMONIALS.map((_, i) => (
                 <button
                   key={i}
                   onClick={() => setCurrent(i)}
-                  className={`h-2 w-2 rounded-full transition ${
-                    i === current ? 'bg-brand-teal w-4' : 'bg-gray-300'
+                  className={`rounded-full transition ${
+                    i === current ? 'bg-brand-teal w-6 sm:w-4 h-3 sm:h-2' : 'bg-gray-300 w-3 h-3 sm:w-2 sm:h-2'
                   }`}
                   aria-label={`Go to testimonial ${i + 1}`}
                 />
@@ -78,7 +78,7 @@ export default function Testimonials() {
 
             <button
               onClick={next}
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 transition hover:bg-brand-teal hover:text-white hover:border-brand-teal"
+              className="flex h-12 w-12 sm:h-10 sm:w-10 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 transition hover:bg-brand-teal hover:text-white hover:border-brand-teal active:bg-brand-teal/10"
               aria-label="Next testimonial"
             >
               <ChevronRight className="h-5 w-5" />

@@ -37,8 +37,10 @@ export default function Footer() {
                 <span>{ADDRESS}</span>
               </li>
               {PHONE_NUMBERS.map((num) => (
-                <li key={num} className="flex items-center gap-2">
-                  <Phone className="h-4 w-4 shrink-0 text-brand-teal" /> {num}
+                <li key={num}>
+                  <a href={`tel:${num.replace(/[^0-9]/g, '')}`} className="flex items-center gap-2 transition hover:text-white">
+                    <Phone className="h-4 w-4 shrink-0 text-brand-teal" /> {num}
+                  </a>
                 </li>
               ))}
               <li className="flex items-center gap-2">

@@ -66,7 +66,7 @@ export default function Navbar() {
 
           <button
             onClick={() => setDrawerOpen(true)}
-            className="md:hidden rounded-lg p-2 text-gray-600 hover:bg-gray-100"
+            className="md:hidden rounded-lg p-3 text-gray-600 hover:bg-gray-100 active:bg-gray-200"
             aria-label="Open menu"
           >
             <Menu className="h-6 w-6" />

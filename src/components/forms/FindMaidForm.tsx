@@ -217,24 +217,24 @@ export default function FindMaidForm() {
         </div>
       )}
 
-      <div className="mt-8 flex items-center justify-between border-t border-gray-100 pt-6">
-        {step > 0 ? (
+      <div className="mt-8 flex flex-col-reverse gap-3 border-t border-gray-100 pt-6 sm:flex-row sm:items-center sm:justify-between">
+        {step > 0 && (
           <button
             type="button"
             onClick={prev}
-            className="inline-flex items-center gap-1 text-sm font-medium text-gray-600 transition hover:text-brand-navy"
+            className="inline-flex items-center justify-center gap-1 rounded-lg py-3 text-sm font-medium text-gray-500 transition hover:text-brand-navy sm:border sm:border-gray-200 sm:px-4"
           >
             <ChevronLeft className="h-4 w-4" /> Back
           </button>
-        ) : (
-          <div />
         )}
+
+        <div className="flex-1" />
 
         {step < 2 ? (
           <button
             type="button"
             onClick={next}
-            className="inline-flex items-center gap-1 rounded-lg bg-brand-teal px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-teal-dark"
+            className="w-full rounded-lg bg-brand-teal px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-brand-teal-dark active:scale-[0.98] sm:w-auto"
           >
             Next <ChevronRight className="h-4 w-4" />
           </button>
@@ -242,7 +242,7 @@ export default function FindMaidForm() {
           <button
             type="submit"
             disabled={state.submitting}
-            className="inline-flex items-center gap-2 rounded-lg bg-brand-red px-8 py-3 text-sm font-semibold text-white transition hover:bg-brand-red-dark disabled:cursor-not-allowed disabled:opacity-60"
+            className="w-full rounded-lg bg-brand-red px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-brand-red-dark active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
           >
             {state.submitting && <Loader2 className="h-4 w-4 animate-spin" />}
             {state.submitting ? 'Submitting...' : 'Submit Request'}
