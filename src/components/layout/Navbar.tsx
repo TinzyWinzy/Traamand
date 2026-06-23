@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Menu, Sparkles, Phone, MapPin } from 'lucide-react'
 import { NAV_LINKS, PRIMARY_PHONE, ADDRESS } from '../../lib/constants'
@@ -7,6 +7,7 @@ import MobileDrawer from './MobileDrawer'
 export default function Navbar() {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const location = useLocation()
+  const closeDrawer = useCallback(() => setDrawerOpen(false), [])
 
   return (
     <>
@@ -73,7 +74,7 @@ export default function Navbar() {
         </div>
       </nav>
 
-      <MobileDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
+      <MobileDrawer open={drawerOpen} onClose={closeDrawer} />
     </>
   )
 }

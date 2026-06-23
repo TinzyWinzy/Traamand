@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type FormEvent } from 'react'
 import { useForm } from '@formspree/react'
 import { Check, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 import { HARARE_SUBURBS, SERVICE_TYPES, HOUSE_SIZES } from '../../lib/constants'
@@ -65,6 +65,12 @@ export default function FindMaidForm() {
 
   const prev = () => setStep((s) => Math.max(s - 1, 0))
 
+  const onSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    if (!validateStep()) return
+    handleSubmit(e)
+  }
+
   if (state.succeeded) {
     return (
       <div className="rounded-2xl bg-white p-8 text-center shadow-md sm:p-12">
@@ -81,7 +87,7 @@ export default function FindMaidForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="rounded-2xl bg-white p-6 shadow-md sm:p-10">
+    <form onSubmit={onSubmit} className="rounded-2xl bg-white p-6 shadow-md sm:p-10">
       <input type="hidden" name="fullName" value={data.fullName} />
       <input type="hidden" name="phone" value={data.phone} />
       <input type="hidden" name="email" value={data.email} />
