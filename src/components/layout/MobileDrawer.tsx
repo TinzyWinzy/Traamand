@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { X, Sparkles } from 'lucide-react'
-import { NAV_LINKS } from '../../lib/constants'
+import { X, Sparkles, Phone } from 'lucide-react'
+import { NAV_LINKS, PRIMARY_PHONE } from '../../lib/constants'
 
 interface Props {
   open: boolean
@@ -35,7 +35,10 @@ export default function MobileDrawer({ open, onClose }: Props) {
         }`}
       >
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-          <Sparkles className="h-5 w-5 text-brand-teal" />
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-brand-teal" />
+            <span className="text-sm font-bold">Traamand</span>
+          </div>
           <button
             onClick={onClose}
             className="rounded-lg p-2 text-gray-500 hover:bg-gray-100"
@@ -62,7 +65,7 @@ export default function MobileDrawer({ open, onClose }: Props) {
               </Link>
             )
           })}
-          <div className="mt-4 border-t border-gray-100 pt-4">
+          <div className="mt-4 border-t border-gray-100 pt-4 space-y-3">
             <Link
               to="/find-a-maid"
               className="block rounded-lg bg-brand-red px-4 py-3 text-center text-base font-semibold text-white transition hover:bg-brand-red-dark"
@@ -71,10 +74,20 @@ export default function MobileDrawer({ open, onClose }: Props) {
             </Link>
             <Link
               to="/join-our-team"
-              className="mt-2 block rounded-lg border-2 border-brand-teal px-4 py-3 text-center text-base font-semibold text-brand-teal transition hover:bg-brand-teal-light"
+              className="block rounded-lg border-2 border-brand-teal px-4 py-3 text-center text-base font-semibold text-brand-teal transition hover:bg-brand-teal-light"
             >
               Apply for a Job
             </Link>
+          </div>
+
+          <div className="mt-6 border-t border-gray-100 pt-4">
+            <a
+              href={`tel:${PRIMARY_PHONE.replace(/[^0-9]/g, '')}`}
+              className="flex items-center gap-2 rounded-lg px-4 py-3 text-sm text-gray-600 hover:bg-gray-50"
+            >
+              <Phone className="h-4 w-4 text-brand-teal" />
+              {PRIMARY_PHONE}
+            </a>
           </div>
         </div>
       </div>

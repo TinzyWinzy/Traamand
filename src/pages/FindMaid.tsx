@@ -1,4 +1,5 @@
 import { ShieldCheck } from 'lucide-react'
+import { COMPANY_NAME } from '../lib/constants'
 import FindMaidForm from '../components/forms/FindMaidForm'
 
 export default function FindMaid() {
@@ -9,13 +10,14 @@ export default function FindMaid() {
           <div className="mb-8 text-center">
             <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-brand-teal-light px-4 py-1.5 text-sm font-medium text-brand-teal">
               <ShieldCheck className="h-4 w-4" />
-              Police Vetted &bull; Background Checked
+              Document Verified &bull; Background Screened
             </div>
             <h1 className="text-3xl font-bold tracking-tight text-brand-navy sm:text-4xl">
-              Find a Maid
+              Hire a Domestic Worker
             </h1>
             <p className="mt-3 text-gray-600">
-              Tell us what you need and we&apos;ll match you with the perfect domestic worker.
+              Tell us what you need and we&apos;ll match you with a document-verified,
+              background-screened domestic worker from {COMPANY_NAME}.
             </p>
           </div>
 

@@ -1,6 +1,9 @@
-import { useState, type FormEvent } from 'react'
-import { Check, ChevronLeft, ChevronRight } from 'lucide-react'
+import { useState } from 'react'
+import { useForm } from '@formspree/react'
+import { Check, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 import { HARARE_SUBURBS, SERVICE_TYPES, HOUSE_SIZES } from '../../lib/constants'
+
+const FORM_ID = 'mrewbdrv'
 
 interface FormData {
   fullName: string
@@ -25,7 +28,7 @@ const INITIAL: FormData = {
 export default function FindMaidForm() {
   const [step, setStep] = useState(0)
   const [data, setData] = useState<FormData>(INITIAL)
-  const [submitted, setSubmitted] = useState(false)
+  const [state, handleSubmit] = useForm(FORM_ID)
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({})
 
   const update = (field: keyof FormData, value: string) => {
@@ -62,13 +65,7 @@ export default function FindMaidForm() {
 
   const prev = () => setStep((s) => Math.max(s - 1, 0))
 
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault()
-    if (!validateStep()) return
-    setSubmitted(true)
-  }
-
-  if (submitted) {
+  if (state.succeeded) {
     return (
       <div className="rounded-2xl bg-white p-8 text-center shadow-md sm:p-12">
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
@@ -85,7 +82,15 @@ export default function FindMaidForm() {
 
   return (
     <form onSubmit={handleSubmit} className="rounded-2xl bg-white p-6 shadow-md sm:p-10">
-      {/* Progress */}
+      <input type="hidden" name="fullName" value={data.fullName} />
+      <input type="hidden" name="phone" value={data.phone} />
+      <input type="hidden" name="email" value={data.email} />
+      <input type="hidden" name="suburb" value={data.suburb} />
+      <input type="hidden" name="houseSize" value={data.houseSize} />
+      <input type="hidden" name="serviceType" value={data.serviceType} />
+      <input type="hidden" name="requirements" value={data.requirements} />
+      <input type="hidden" name="_subject" value="New Client Request - Find a Maid" />
+
       <div className="mb-8 flex items-center justify-center gap-2">
         {[0, 1, 2].map((s) => (
           <div key={s} className="flex items-center gap-2">
@@ -103,7 +108,6 @@ export default function FindMaidForm() {
         ))}
       </div>
 
-      {/* Step 0 - Personal Info */}
       {step === 0 && (
         <div className="space-y-5">
           <h2 className="text-xl font-bold text-brand-navy">Your Details</h2>
@@ -137,7 +141,6 @@ export default function FindMaidForm() {
         </div>
       )}
 
-      {/* Step 1 - Location & House */}
       {step === 1 && (
         <div className="space-y-5">
           <h2 className="text-xl font-bold text-brand-navy">Location & Home</h2>
@@ -174,7 +177,6 @@ export default function FindMaidForm() {
         </div>
       )}
 
-      {/* Step 2 - Services */}
       {step === 2 && (
         <div className="space-y-5">
           <h2 className="text-xl font-bold text-brand-navy">Service Needed</h2>
@@ -182,16 +184,17 @@ export default function FindMaidForm() {
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {SERVICE_TYPES.map((svc) => (
                 <button
-                  key={svc}
+                  key={svc.label}
                   type="button"
-                  onClick={() => update('serviceType', svc)}
-                  className={`rounded-lg border px-4 py-3 text-sm font-medium transition ${
-                    data.serviceType === svc
-                      ? 'border-brand-teal bg-brand-teal-light text-brand-teal'
-                      : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                  onClick={() => update('serviceType', svc.label)}
+                  className={`rounded-lg border px-4 py-4 text-left transition ${
+                    data.serviceType === svc.label
+                      ? 'border-brand-teal bg-brand-teal-light'
+                      : 'border-gray-200 hover:border-gray-300'
                   }`}
                 >
-                  {svc}
+                  <span className="block text-sm font-semibold text-brand-navy">{svc.label}</span>
+                  <span className="mt-0.5 block text-xs text-gray-500">{svc.desc}</span>
                 </button>
               ))}
             </div>
@@ -208,7 +211,6 @@ export default function FindMaidForm() {
         </div>
       )}
 
-      {/* Navigation */}
       <div className="mt-8 flex items-center justify-between border-t border-gray-100 pt-6">
         {step > 0 ? (
           <button
@@ -233,9 +235,11 @@ export default function FindMaidForm() {
         ) : (
           <button
             type="submit"
-            className="rounded-lg bg-brand-red px-8 py-3 text-sm font-semibold text-white transition hover:bg-brand-red-dark"
+            disabled={state.submitting}
+            className="inline-flex items-center gap-2 rounded-lg bg-brand-red px-8 py-3 text-sm font-semibold text-white transition hover:bg-brand-red-dark disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Submit Request
+            {state.submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+            {state.submitting ? 'Submitting...' : 'Submit Request'}
           </button>
         )}
       </div>
