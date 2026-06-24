@@ -35,7 +35,7 @@ export default function Navbar() {
             />
             <div>
               <span className="text-xl font-bold tracking-tight block leading-tight">
-                <span className="text-brand-red">TRAA</span><span className="text-brand-navy">MAND</span>
+                <span className="text-brand-red">TRAA</span><span className="text-brand-teal">MAND</span>
               </span>
               <span className="text-[10px] font-medium text-gray-500 uppercase tracking-widest hidden sm:block">
                 Employment Services

@@ -37,7 +37,7 @@ export default function MobileDrawer({ open, onClose }: Props) {
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
           <div className="flex items-center gap-2">
             <img src="/logo.jpg" alt="Traamand" className="h-10 w-auto" />
-            <span className="text-sm font-bold"><span className="text-brand-red">TRAA</span><span className="text-brand-navy">MAND</span></span>
+            <span className="text-sm font-bold"><span className="text-brand-red">TRAA</span><span className="text-brand-teal">MAND</span></span>
           </div>
           <button
             onClick={onClose}
