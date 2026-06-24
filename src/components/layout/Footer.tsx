@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
-import { Sparkles, Phone, Mail, MapPin } from 'lucide-react'
-import { COMPANY_NAME, ADDRESS, PHONE_NUMBERS, EMAIL } from '../../lib/constants'
+import { Phone, Mail, MapPin } from 'lucide-react'
+import { COMPANY_NAME, ADDRESS, PHONE_NUMBERS, EMAIL, SERVICE_CATEGORIES } from '../../lib/constants'
 
 export default function Footer() {
   return (
@@ -9,8 +9,8 @@ export default function Footer() {
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
           <div>
             <div className="flex items-center gap-2 text-white">
-              <Sparkles className="h-5 w-5 text-brand-teal" />
-              <span className="text-lg font-bold">Traamand</span>
+              <img src="/logo.jpg" alt="Traamand" className="h-12 w-auto" />
+              <span className="text-lg font-bold"><span className="text-brand-red">TRAA</span><span className="text-white">MAND</span></span>
             </div>
             <p className="mt-1 text-xs uppercase tracking-widest text-gray-500">
               Employment Services
@@ -21,11 +21,13 @@ export default function Footer() {
           </div>
 
           <div>
-            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-white">Quick Links</h3>
-            <ul className="space-y-2 text-sm">
-              <li><Link to="/" className="transition hover:text-brand-teal">Home</Link></li>
-              <li><Link to="/find-a-maid" className="transition hover:text-brand-teal">Find a Maid</Link></li>
-              <li><Link to="/join-our-team" className="transition hover:text-brand-teal">Join Our Team</Link></li>
+            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-white">Services</h3>
+            <ul className="space-y-1.5 text-sm">
+              {SERVICE_CATEGORIES.map((cat) => (
+                <li key={cat}>
+                  <Link to="/available-staff" className="transition hover:text-brand-teal">{cat}s</Link>
+                </li>
+              ))}
             </ul>
           </div>
 

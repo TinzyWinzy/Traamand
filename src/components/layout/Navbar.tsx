@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Menu, Sparkles, Phone, MapPin } from 'lucide-react'
+import { Menu, Phone, MapPin } from 'lucide-react'
 import { NAV_LINKS, PRIMARY_PHONE, ADDRESS } from '../../lib/constants'
 import MobileDrawer from './MobileDrawer'
 
@@ -28,10 +28,14 @@ export default function Navbar() {
       <nav className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-gray-100">
         <div className="mx-auto max-w-7xl flex items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
           <Link to="/" className="flex items-center gap-2">
-            <Sparkles className="h-6 w-6 text-brand-teal" />
+            <img
+              src="/logo.jpg"
+              alt="Traamand"
+               className="h-12 w-auto"
+            />
             <div>
               <span className="text-xl font-bold tracking-tight block leading-tight">
-                Traamand
+                <span className="text-brand-red">TRAA</span><span className="text-brand-navy">MAND</span>
               </span>
               <span className="text-[10px] font-medium text-gray-500 uppercase tracking-widest hidden sm:block">
                 Employment Services

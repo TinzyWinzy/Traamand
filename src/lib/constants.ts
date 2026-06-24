@@ -48,6 +48,10 @@ export const EDUCATION_LEVELS = [
 
 export const LANGUAGES = ["Shona", "Ndebele", "English", "Other"]
 
+export const SERVICE_CATEGORIES = [
+  "Maid", "Nanny", "Chef", "Gardener", "Nurse Aide", "Driver", "Sales Lady", "Bar Lady",
+] as const
+
 export interface Candidate {
   id: string
   category: "Nanny" | "Maid" | "Chef" | "Gardener" | "Nurse Aide" | "Driver" | "Sales Lady" | "Bar Lady"

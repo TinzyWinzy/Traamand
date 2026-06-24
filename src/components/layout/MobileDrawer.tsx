@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { X, Sparkles, Phone } from 'lucide-react'
+import { X, Phone } from 'lucide-react'
 import { NAV_LINKS, PRIMARY_PHONE } from '../../lib/constants'
 
 interface Props {
@@ -36,8 +36,8 @@ export default function MobileDrawer({ open, onClose }: Props) {
       >
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
           <div className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-brand-teal" />
-            <span className="text-sm font-bold">Traamand</span>
+            <img src="/logo.jpg" alt="Traamand" className="h-10 w-auto" />
+            <span className="text-sm font-bold"><span className="text-brand-red">TRAA</span><span className="text-brand-navy">MAND</span></span>
           </div>
           <button
             onClick={onClose}

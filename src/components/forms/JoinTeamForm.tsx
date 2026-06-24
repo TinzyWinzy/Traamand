@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useForm } from '@formspree/react'
 import { Check, Upload, Loader2, Briefcase, Clock, Building2, TrendingUp } from 'lucide-react'
-import { EDUCATION_LEVELS, LANGUAGES } from '../../lib/constants'
+import { EDUCATION_LEVELS, LANGUAGES, SERVICE_CATEGORIES } from '../../lib/constants'
 
 const FORM_ID = 'mrewbdrv'
 
@@ -13,6 +13,7 @@ const SELLING_POINTS = [
 ]
 
 interface FormData {
+  position: string
   fullName: string
   phone: string
   age: string
@@ -23,6 +24,7 @@ interface FormData {
 }
 
 const INITIAL: FormData = {
+  position: '',
   fullName: '',
   phone: '',
   age: '',
@@ -48,6 +50,7 @@ export default function JoinTeamForm() {
   const validate = (): boolean => {
     const errs: Partial<Record<string, string>> = {}
 
+    if (!data.position) errs.position = 'Select a position'
     if (!data.fullName.trim()) errs.fullName = 'Full name is required'
     if (!data.phone.trim()) errs.phone = 'Phone number is required'
     else if (!/^0[0-9]{9}$/.test(data.phone.replace(/[\s-]/g, '')))
@@ -100,6 +103,7 @@ export default function JoinTeamForm() {
       </div>
 
       <form onSubmit={onSubmit} className="rounded-2xl bg-white p-6 shadow-md sm:p-10">
+        <input type="hidden" name="position" value={data.position} />
         <input type="hidden" name="fullName" value={data.fullName} />
         <input type="hidden" name="phone" value={data.phone} />
         <input type="hidden" name="age" value={data.age} />
@@ -109,7 +113,7 @@ export default function JoinTeamForm() {
         <input type="hidden" name="primaryLanguage" value={data.primaryLanguage} />
         <input type="hidden" name="nationalId" value={nationalIdName} />
         <input type="hidden" name="policeClearance" value={policeClearanceName} />
-        <input type="hidden" name="_subject" value="New Job Seeker Application - Join Our Team" />
+        <input type="hidden" name="_subject" value={data.position ? `New Application - ${data.position} - Join Our Team` : 'New Job Seeker Application - Join Our Team'} />
 
         <div className="mb-8">
           <h2 className="text-xl font-bold text-slate-900">Personal Information</h2>
@@ -119,6 +123,19 @@ export default function JoinTeamForm() {
         </div>
 
         <div className="space-y-5">
+          <Field label="Position Applying For" error={didValidate ? errors.position : undefined}>
+            <select
+              value={data.position}
+              onChange={(e) => update('position', e.target.value)}
+              className="w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+            >
+              <option value="">Select a position</option>
+              {SERVICE_CATEGORIES.map((cat) => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+          </Field>
+
           <div className="grid gap-5 sm:grid-cols-2">
             <Field label="Full Name" error={didValidate ? errors.fullName : undefined}>
               <input

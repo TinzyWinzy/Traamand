@@ -26,9 +26,9 @@ export default function Hero() {
           </h1>
 
           <p className="mt-6 text-lg leading-relaxed text-gray-200 sm:text-xl">
-            {COMPANY_NAME} connects you with document-verified, background-screened,
-            and professionally trained domestic workers. Whether you need a full-time
-            live-in maid, part-time housekeeper, or nanny — we make hiring safe and simple.
+            {COMPANY_NAME} connects you with document-verified, background-screened
+            domestic workers, gardeners, nurse aides, drivers, sales staff, and more.
+            Whether you need full-time help or part-time support — we make hiring safe and simple.
           </p>
 
           <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
