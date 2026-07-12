@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Menu, Phone, MapPin, Shield, X, LogOut } from 'lucide-react'
+import { Menu, Phone, MapPin, Shield, X, LogOut, DollarSign, Gift } from 'lucide-react'
 import { NAV_LINKS, PRIMARY_PHONE, ADDRESS } from '../../lib/constants'
 import { useAuthStore } from '../../stores/authStore'
 import { logout } from '../../firebase/auth'
@@ -90,6 +90,14 @@ export default function Navbar() {
                     Dashboard
                   </Link>
                 )}
+                {user.role === 'verifier' && (
+                  <Link
+                    to="/verifier"
+                    className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
+                  >
+                    Verify
+                  </Link>
+                )}
                 <Link
                   to="/my-hires"
                   className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
@@ -101,6 +109,25 @@ export default function Navbar() {
                   className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
                 >
                   My Application
+                </Link>
+                <Link
+                  to="/my-referrals"
+                  className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-50"
+                >
+                  <Gift className="h-4 w-4" />
+                  <span>${user.earningsBalance?.toFixed(0) || '0'}</span>
+                </Link>
+                <Link
+                  to="/creator"
+                  className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
+                >
+                  Create
+                </Link>
+                <Link
+                  to="/sponsor"
+                  className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
+                >
+                  Sponsor
                 </Link>
                 <div className="flex items-center gap-2 border-l border-slate-200 pl-3">
                   <span className="text-sm text-slate-400">{user.name?.split(' ')[0]}</span>
@@ -184,6 +211,15 @@ export default function Navbar() {
                       Dashboard
                     </Link>
                   )}
+                  {user.role === 'verifier' && (
+                    <Link
+                      to="/verifier"
+                      onClick={closeDrawer}
+                      className="block rounded-xl px-4 py-3 text-sm font-semibold text-amber-700 transition hover:bg-amber-50"
+                    >
+                      Verify Tasks
+                    </Link>
+                  )}
                   <Link
                     to="/my-hires"
                     onClick={closeDrawer}
@@ -197,6 +233,38 @@ export default function Navbar() {
                     className="block rounded-xl px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                   >
                     My Application
+                  </Link>
+                  <Link
+                    to="/my-referrals"
+                    onClick={closeDrawer}
+                    className="flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-50"
+                  >
+                    <Gift className="h-4 w-4" />
+                    Refer & Earn
+                    <span className="ml-auto rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-bold text-emerald-700">
+                      ${user.earningsBalance?.toFixed(0) || '0'}
+                    </span>
+                  </Link>
+                  <Link
+                    to="/creator"
+                    onClick={closeDrawer}
+                    className="block rounded-xl px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                  >
+                    Creator Fund
+                  </Link>
+                  <Link
+                    to="/sponsor"
+                    onClick={closeDrawer}
+                    className="block rounded-xl px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                  >
+                    Sponsor
+                  </Link>
+                  <Link
+                    to="/advertise"
+                    onClick={closeDrawer}
+                    className="block rounded-xl px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                  >
+                    Advertise
                   </Link>
                   <div className="border-t border-slate-100 my-3" />
                   <div className="px-4 py-2 text-sm text-slate-400">Signed in as {user.name}</div>

@@ -3,6 +3,7 @@ import { Check, Upload, Loader2, Briefcase, Clock, Building2, TrendingUp } from 
 import { EDUCATION_LEVELS, LANGUAGES, SERVICE_CATEGORIES } from '../../lib/constants'
 import { createApplicant } from '../../firebase/firestore'
 import { uploadApplicantFile } from '../../lib/upload'
+import { useAuthStore } from '../../stores/authStore'
 
 const SELLING_POINTS = [
   { icon: Briefcase, text: 'Immediate Job Placement — quick matching with families and businesses looking for help.' },
@@ -34,6 +35,7 @@ const INITIAL: FormData = {
 }
 
 export default function JoinTeamForm() {
+  const { user } = useAuthStore()
   const [data, setData] = useState<FormData>(INITIAL)
   const [nationalIdFile, setNationalIdFile] = useState<File | null>(null)
   const [policeClearanceFile, setPoliceClearanceFile] = useState<File | null>(null)
@@ -96,6 +98,7 @@ export default function JoinTeamForm() {
         interviewNotes: '',
         convertedWorkerId: '',
         source: 'join_team_form',
+        userId: user?.id || '',
       })
 
       setApplicantRef(applicantId)

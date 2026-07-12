@@ -21,6 +21,7 @@ export const NAV_LINKS = [
   { label: "Available Staff", to: "/available-staff" },
   { label: "Find a Maid", to: "/find-a-maid" },
   { label: "Join Our Team", to: "/join-our-team" },
+  { label: "Earn Money", to: "/my-referrals" },
 ] as const
 
 export const SUBURBS_BY_REGION: Record<string, string[]> = {

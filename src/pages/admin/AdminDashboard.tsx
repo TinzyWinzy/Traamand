@@ -3,11 +3,12 @@ import { Link } from 'react-router-dom'
 import {
   Shield, Users, DollarSign, Calendar, BookOpen,
   UserCircle, UserPlus, TrendingUp, Loader2, ArrowUpRight,
+  Clock, CheckCircle, XCircle, Smartphone,
 } from 'lucide-react'
 import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore'
 import { db } from '../../firebase/config'
 import { useToastStore } from '../../stores/toastStore'
-import type { Booking, Worker } from '../../types'
+import type { Booking, Worker, Payout, CreatorSubmission, VerifierTask, User as UserType } from '../../types'
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState({
@@ -18,6 +19,12 @@ export default function AdminDashboard() {
     totalClients: 0,
     totalApplicants: 0,
     revenueMTD: 0,
+    pendingPayouts: 0,
+    pendingPayoutAmount: 0,
+    pendingSubmissions: 0,
+    openVerifierTasks: 0,
+    totalUsers: 0,
+    referralEarnings: 0,
   })
   const [recentBookings, setRecentBookings] = useState<Booking[]>([])
   const [loading, setLoading] = useState(true)
@@ -29,11 +36,18 @@ export default function AdminDashboard() {
 
   const fetchStats = async () => {
     try {
-      const [workersSnap, bookingsSnap, usersSnap, applicantsSnap] = await Promise.all([
+      const [
+        workersSnap, bookingsSnap, usersSnap, applicantsSnap,
+        payoutsSnap, subSnap, verifierSnap, txSnap,
+      ] = await Promise.all([
         getDocs(collection(db, 'workers')),
         getDocs(collection(db, 'bookings')),
         getDocs(query(collection(db, 'users'), where('role', '==', 'client'))),
         getDocs(collection(db, 'applicants')),
+        getDocs(query(collection(db, 'payouts'), where('status', '==', 'pending'))),
+        getDocs(query(collection(db, 'creatorSubmissions'), where('status', '==', 'pending'))),
+        getDocs(query(collection(db, 'verifierTasks'), where('status', '==', 'open'))),
+        getDocs(query(collection(db, 'transactions'), where('type', 'in', ['referral_bonus', 'referral_grandparent', 'verifier_payout', 'creator_payout']))),
       ])
 
       const workers = workersSnap.docs.map((d) => ({ id: d.id, ...d.data() }) as Worker)
@@ -46,10 +60,16 @@ export default function AdminDashboard() {
         totalBookings: bookings.length,
         totalClients: usersSnap.size,
         totalApplicants: applicantsSnap.size,
+        totalUsers: (await getDocs(collection(db, 'users'))).size,
         revenueMTD: bookings
           .filter((b) => b.placementFeePaid)
           .reduce((sum, b) => sum + (b.placementFee || 0), 0),
-      })
+        pendingPayouts: payoutsSnap.size,
+        pendingPayoutAmount: payoutsSnap.docs.reduce((s, d) => s + (d.data().amount || 0), 0),
+        pendingSubmissions: subSnap.size,
+        openVerifierTasks: verifierSnap.size,
+        referralEarnings: txSnap.docs.reduce((s, d) => s + (d.data().amount || 0), 0).toFixed(2),
+      } as any)
 
       const recentQuery = query(collection(db, 'bookings'), orderBy('createdAt', 'desc'), limit(5))
       const recentSnap = await getDocs(recentQuery)
@@ -69,13 +89,35 @@ export default function AdminDashboard() {
   }
 
   const statCards = [
-    { label: 'Active Bookings', value: String(stats.activeBookings), icon: BookOpen, color: 'text-blue-600 bg-blue-50' },
-    { label: 'Total Workers', value: String(stats.totalWorkers), icon: Users, color: 'text-purple-600 bg-purple-50' },
-    { label: 'Verified Workers', value: String(stats.verifiedWorkers), icon: Shield, color: 'text-amber-600 bg-amber-50' },
-    { label: 'Revenue (MTD)', value: `$${stats.revenueMTD}`, icon: DollarSign, color: 'text-teal-600 bg-teal-50' },
-    { label: 'Total Bookings', value: String(stats.totalBookings), icon: Calendar, color: 'text-green-600 bg-green-50' },
-    { label: 'Clients', value: String(stats.totalClients), icon: UserCircle, color: 'text-rose-600 bg-rose-50' },
-    { label: 'Applicants', value: String(stats.totalApplicants), icon: UserPlus, color: 'text-indigo-600 bg-indigo-50' },
+    { label: 'Active Bookings', value: String(stats.activeBookings), icon: BookOpen, color: 'text-blue-600 bg-blue-50', link: '/admin/bookings' },
+    { label: 'Total Workers', value: String(stats.totalWorkers), icon: Users, color: 'text-purple-600 bg-purple-50', link: '/admin/workers' },
+    { label: 'Verified Workers', value: String(stats.verifiedWorkers), icon: Shield, color: 'text-amber-600 bg-amber-50', link: '/admin/workers' },
+    { label: 'Revenue (MTD)', value: `$${stats.revenueMTD}`, icon: DollarSign, color: 'text-teal-600 bg-teal-50', link: '/admin/payments' },
+    { label: 'Clients', value: String(stats.totalClients), icon: UserCircle, color: 'text-rose-600 bg-rose-50', link: '/admin/clients' },
+    { label: 'Applicants', value: String(stats.totalApplicants), icon: UserPlus, color: 'text-indigo-600 bg-indigo-50', link: '/admin/applicants' },
+  ]
+
+  const alertCards = [
+    {
+      label: 'Pending Payouts', value: `$${stats.pendingPayoutAmount.toFixed(2)} (${stats.pendingPayouts})`,
+      icon: Smartphone, color: 'text-amber-600 bg-amber-50', link: '/admin/payouts',
+      urgent: stats.pendingPayouts > 0,
+    },
+    {
+      label: 'Creator Submissions', value: String(stats.pendingSubmissions),
+      icon: Clock, color: 'text-purple-600 bg-purple-50', link: '/admin/content',
+      urgent: stats.pendingSubmissions > 0,
+    },
+    {
+      label: 'Open Verifier Tasks', value: String(stats.openVerifierTasks),
+      icon: CheckCircle, color: 'text-blue-600 bg-blue-50', link: '/admin/tasks',
+      urgent: stats.openVerifierTasks > 0,
+    },
+    {
+      label: 'Referral Earnings', value: `$${stats.referralEarnings}`,
+      icon: TrendingUp, color: 'text-teal-600 bg-teal-50', link: '/admin/users',
+      urgent: false,
+    },
   ]
 
   const statusBadge = (status: string) => {
@@ -94,24 +136,47 @@ export default function AdminDashboard() {
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-extrabold text-slate-900">Dashboard</h1>
-        <p className="mt-1 text-sm text-slate-500">Overview of your Traamand operations.</p>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-extrabold text-slate-900">Dashboard</h1>
+          <p className="text-sm text-slate-500">Operational overview &amp; CRM hub.</p>
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-6">
+      {/* Main KPIs */}
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-6 mb-6">
         {statCards.map((stat) => (
-          <div key={stat.label} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <Link key={stat.label} to={stat.link} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-teal-200 hover:shadow-md">
             <div className={`mb-2 inline-flex rounded-lg p-2 ${stat.color}`}>
               <stat.icon className="h-5 w-5" />
             </div>
             <p className="text-2xl font-bold text-slate-900">{stat.value}</p>
             <p className="text-xs text-slate-500">{stat.label}</p>
-          </div>
+          </Link>
         ))}
       </div>
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-2">
+      {/* Alert cards */}
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 mb-6">
+        {alertCards.map((card) => (
+          <Link
+            key={card.label}
+            to={card.link}
+            className={`rounded-xl border p-4 shadow-sm transition hover:shadow-md ${
+              card.urgent ? 'border-amber-200 bg-amber-50/30 hover:border-amber-300' : 'border-slate-200 bg-white hover:border-teal-200'
+            }`}
+          >
+            <div className={`mb-2 inline-flex rounded-lg p-2 ${card.color}`}>
+              <card.icon className="h-5 w-5" />
+            </div>
+            <p className="text-xl font-bold text-slate-900">{card.value}</p>
+            <p className="text-xs text-slate-500">{card.label}</p>
+          </Link>
+        ))}
+      </div>
+
+      <div className="mt-4 grid gap-6 lg:grid-cols-2">
+        {/* Quick Actions */}
         <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="text-lg font-bold text-slate-900 mb-4">Quick Actions</h2>
           <div className="grid gap-3 sm:grid-cols-2">
@@ -121,6 +186,9 @@ export default function AdminDashboard() {
               { label: 'Bookings Pipeline', to: '/admin/bookings', icon: BookOpen, desc: 'Manage booking lifecycle' },
               { label: 'Client CRM', to: '/admin/clients', icon: UserCircle, desc: 'View client profiles' },
               { label: 'Payments', to: '/admin/payments', icon: DollarSign, desc: 'Reconcile payments' },
+              { label: 'Payouts', to: '/admin/payouts', icon: Smartphone, desc: 'Process withdrawal requests' },
+              { label: 'Creator Content', to: '/admin/content', icon: Clock, desc: 'Review submissions' },
+              { label: 'Verifier Tasks', to: '/admin/tasks', icon: CheckCircle, desc: 'Manage verification tasks' },
             ].map((item) => (
               <Link
                 key={item.to}
@@ -139,6 +207,7 @@ export default function AdminDashboard() {
           </div>
         </div>
 
+        {/* Recent Bookings */}
         <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-bold text-slate-900">Recent Bookings</h2>

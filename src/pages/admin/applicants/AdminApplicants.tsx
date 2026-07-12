@@ -12,6 +12,7 @@ import { generateWhatsAppUrl } from '../../../lib/whatsapp'
 import { generateWorkerSlug } from '../../../lib/worker'
 import { useToastStore } from '../../../stores/toastStore'
 import { verifyNationalId, parseResume, verifyPoliceClearance, computeOverallVerification, makeVerification } from '../../../lib/verification'
+import { createVerifierTask, getUserByReferralCode, getUserData, createTransaction } from '../../../firebase/firestore'
 import type { Applicant, ApplicantStatus, DocumentVerification, ApplicantVerification } from '../../../types'
 
 const PIPELINE_STAGES: { status: ApplicantStatus; label: string; color: string }[] = [
@@ -156,8 +157,66 @@ export default function AdminApplicants() {
             : a
         )
       )
+
+      // Worker referral bonus: credit $10 to the referrer
+      if (applicant.userId) {
+        const applicantUser = await getUserData(applicant.userId)
+        if (applicantUser?.referredBy) {
+          const referrer = await getUserByReferralCode(applicantUser.referredBy)
+          if (referrer) {
+            const newBalance = (referrer.earningsBalance || 0) + 10
+            await createTransaction({
+              userId: referrer.id,
+              type: 'referral_bonus',
+              amount: 10,
+              balance: newBalance,
+              reference: workerRef.id,
+              description: `Worker referral bonus: ${applicant.fullName} placed as ${applicant.position}`,
+              status: 'completed',
+            })
+            await updateDoc(doc(db, 'users', referrer.id), { earningsBalance: newBalance })
+
+            // Grandparent bonus: credit $2 to the referrer's referrer
+            if (referrer.referredBy) {
+              const grandparent = await getUserByReferralCode(referrer.referredBy)
+              if (grandparent) {
+                const gpBalance = (grandparent.earningsBalance || 0) + 2
+                await createTransaction({
+                  userId: grandparent.id,
+                  type: 'referral_grandparent',
+                  amount: 2,
+                  balance: gpBalance,
+                  reference: workerRef.id,
+                  description: `Grandparent bonus: ${applicant.fullName} placed (referred by ${referrer.name})`,
+                  status: 'completed',
+                })
+                await updateDoc(doc(db, 'users', grandparent.id), { earningsBalance: gpBalance })
+              }
+            }
+          }
+        }
+      }
     } catch (err) {
       addToast('Failed to convert applicant', 'error')
+    }
+  }
+
+  const createVerifierTaskHandler = async (applicant: Applicant) => {
+    try {
+      await createVerifierTask({
+        applicantId: applicant.id,
+        applicantName: applicant.fullName,
+        applicantPhone: applicant.phone,
+        location: applicant.position,
+        taskType: 'full_verify',
+        assignedTo: '',
+        fee: 8,
+        notes: '',
+        resultNotes: '',
+      })
+      addToast('Verifier task created for ' + applicant.fullName, 'success')
+    } catch {
+      addToast('Failed to create verifier task', 'error')
     }
   }
 
@@ -695,6 +754,19 @@ export default function AdminApplicants() {
                   >
                     <UserPlus className="h-5 w-5" />
                     Convert to Worker Profile
+                  </button>
+                )}
+
+                {/* Send to Verifier */}
+                {!['converted', 'rejected'].includes(applicant.status) && (
+                  <button
+                    onClick={() => {
+                      createVerifierTaskHandler(applicant)
+                    }}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-6 py-3 text-sm font-bold text-amber-700 transition hover:bg-amber-100 active:scale-95"
+                  >
+                    <ShieldCheck className="h-5 w-5" />
+                    Send to Verifier ($8)
                   </button>
                 )}
 

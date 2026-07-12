@@ -11,6 +11,7 @@ import {
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore'
 import { auth, db } from './config'
 import type { User, UserRole } from '../types'
+import { generateReferralCode } from '../lib/referral'
 
 let recaptchaVerifier: RecaptchaVerifier | null = null
 let confirmationResult: ConfirmationResult | null = null
@@ -77,6 +78,8 @@ export async function createOrUpdateUser(
     return { id: firebaseUser.uid, ...existing } as unknown as User
   }
 
+  const referredBy = typeof window !== 'undefined' ? sessionStorage.getItem('traamand_ref') || '' : ''
+
   const newUser = {
     name: data.name,
     phone: data.phone || '',
@@ -86,11 +89,20 @@ export async function createOrUpdateUser(
     bookings: [],
     favoriteWorkers: [],
     role: data.role || 'client',
+    referralCode: generateReferralCode(),
+    referredBy,
+    earningsBalance: 0,
+    referralClicks: 0,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   }
 
   await setDoc(userRef, newUser)
+
+  if (referredBy && typeof window !== 'undefined') {
+    sessionStorage.removeItem('traamand_ref')
+  }
+
   return { id: firebaseUser.uid, ...newUser } as unknown as User
 }
 

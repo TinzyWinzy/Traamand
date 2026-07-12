@@ -152,6 +152,45 @@ export interface UserAddress {
 
 export type UserRole = 'client' | 'admin' | 'verifier'
 
+export type TransactionType =
+  | 'referral_bonus'
+  | 'referral_grandparent'
+  | 'verifier_payout'
+  | 'ambassador_share'
+  | 'creator_payout'
+  | 'sponsor_bonus'
+  | 'ad_revenue'
+  | 'withdrawal'
+  | 'placement_fee'
+  | 'cashback'
+
+export interface Transaction {
+  id: string
+  userId: string
+  type: TransactionType
+  amount: number
+  balance: number
+  reference: string
+  description: string
+  status: 'pending' | 'completed' | 'failed'
+  createdAt: Timestamp
+}
+
+export type PayoutMethod = 'ecocash' | 'onemoney' | 'innbucks' | 'bank' | 'airtime' | 'data' | 'traamand_credit'
+
+export interface Payout {
+  id: string
+  userId: string
+  amount: number
+  method: PayoutMethod
+  recipient: string
+  fee: number
+  status: 'pending' | 'processing' | 'completed' | 'failed'
+  notes: string
+  requestedAt: Timestamp
+  completedAt: Timestamp | null
+}
+
 export interface User {
   id: string
   name: string
@@ -162,6 +201,10 @@ export interface User {
   bookings: string[]
   favoriteWorkers: string[]
   role: UserRole
+  referralCode: string
+  referredBy: string
+  earningsBalance: number
+  referralClicks: number
   createdAt: Timestamp
 }
 
@@ -194,6 +237,7 @@ export interface Applicant {
   interviewNotes: string
   convertedWorkerId: string
   source: string
+  userId: string
   createdAt: Timestamp
   updatedAt: Timestamp
 }
@@ -218,6 +262,32 @@ export interface LocationPage {
 
 export type VerificationStatus = 'pending' | 'pass' | 'fail'
 
+export interface AmbassadorTier {
+  name: 'Bronze' | 'Silver' | 'Gold' | 'Platinum'
+  minReferrals: number
+  minHires: number
+  revenueSharePercent: number
+  bonusAmount: number
+  badgeColor: string
+}
+
+export interface ReferralNode {
+  user: User
+  level: number
+  children: ReferralNode[]
+  hires: number
+  earnedFromHere: number
+}
+
+export interface LeaderboardEntry {
+  userId: string
+  name: string
+  referralClicks: number
+  referralSignups: number
+  referralHires: number
+  earningsBalance: number
+}
+
 export interface DocumentVerification {
   status: VerificationStatus
   verifiedAt: Timestamp | null
@@ -226,6 +296,70 @@ export interface DocumentVerification {
   extractedData: Record<string, string>
   confidence: number
   issues: string[]
+}
+
+export interface VerifierTask {
+  id: string
+  applicantId: string
+  applicantName: string
+  applicantPhone: string
+  location: string
+  taskType: 'id_check' | 'full_verify'
+  status: 'open' | 'assigned' | 'completed' | 'cancelled'
+  assignedTo: string
+  fee: number
+  notes: string
+  resultNotes: string
+  createdAt: Timestamp
+  assignedAt: Timestamp | null
+  completedAt: Timestamp | null
+}
+
+export interface CreatorSubmission {
+  id: string
+  userId: string
+  creatorCode: string
+  contentType: 'tiktok' | 'instagram' | 'facebook' | 'youtube' | 'blog' | 'testimonial'
+  url: string
+  screenshotUrl: string
+  views: number
+  engagements: number
+  status: 'pending' | 'approved' | 'rejected' | 'paid'
+  payoutAmount: number
+  adminNotes: string
+  createdAt: Timestamp
+  updatedAt: Timestamp
+}
+
+export interface Sponsorship {
+  id: string
+  sponsorId: string
+  workerId: string
+  workerName: string
+  clientName: string
+  monthlyBudget: number
+  traamandFee: number
+  status: 'active' | 'paused' | 'ended'
+  startDate: Timestamp
+  nextPaymentDate: Timestamp | null
+  createdAt: Timestamp
+}
+
+export interface AdCampaign {
+  id: string
+  businessName: string
+  businessContact: string
+  description: string
+  targetCategory: string
+  budget: number
+  spend: number
+  impressions: number
+  clicks: number
+  conversions: number
+  status: 'active' | 'paused' | 'ended'
+  userId: string
+  createdAt: Timestamp
+  updatedAt: Timestamp
 }
 
 export interface ApplicantVerification {

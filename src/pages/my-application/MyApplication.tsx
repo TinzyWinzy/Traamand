@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Loader2, Phone, MessageCircle, CheckCircle, XCircle, Clock,
-  ChevronRight, FileText, Calendar,
+  ChevronRight, FileText, Calendar, Search, UserCheck,
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
-import { getApplicantsByPhone } from '../../firebase/firestore'
+import { useToastStore } from '../../stores/toastStore'
+import { getApplicantsByPhone, getApplicantsByUserId, updateApplicant } from '../../firebase/firestore'
 import { generateWhatsAppUrl } from '../../lib/whatsapp'
 import { WHATSAPP_NUMBERS } from '../../lib/whatsapp'
 import type { Applicant, ApplicantStatus } from '../../types'
@@ -39,19 +40,48 @@ function formatDate(ts: unknown) {
 
 export default function MyApplication() {
   const { user } = useAuthStore()
+  const addToast = useToastStore((s) => s.addToast)
   const [applicants, setApplicants] = useState<Applicant[]>([])
   const [loading, setLoading] = useState(true)
+  const [linking, setLinking] = useState(false)
+  const [phoneInput, setPhoneInput] = useState('')
+  const [searchedPhone, setSearchedPhone] = useState('')
 
   useEffect(() => {
-    if (!user?.phone) {
+    if (!user?.id) {
       setLoading(false)
       return
     }
-    getApplicantsByPhone(user.phone).then((results) => {
+    getApplicantsByUserId(user.id).then((results) => {
       setApplicants(results)
       setLoading(false)
     })
-  }, [user?.phone])
+  }, [user?.id])
+
+  const handleLinkApplication = async () => {
+    const raw = phoneInput.replace(/\s+/g, '')
+    if (!raw) return
+    setLinking(true)
+    setSearchedPhone(raw)
+    try {
+      const results = await getApplicantsByPhone(raw)
+      const unlinked = results.filter((a) => !a.userId || a.userId === user?.id)
+      if (unlinked.length === 0) {
+        addToast('No applications found for that phone number', 'error')
+        setApplicants([])
+      } else {
+        await Promise.all(
+          unlinked.map((a) => updateApplicant(a.id, { userId: user!.id }))
+        )
+        const linked = unlinked.map((a) => ({ ...a, userId: user!.id }))
+        setApplicants(linked)
+        addToast('Application linked to your account', 'success')
+      }
+    } catch {
+      addToast('Failed to find application', 'error')
+    }
+    setLinking(false)
+  }
 
   if (loading) {
     return (
@@ -64,19 +94,46 @@ export default function MyApplication() {
   if (applicants.length === 0) {
     return (
       <section className="min-h-[60vh] bg-zinc-50 py-16">
-        <div className="mx-auto max-w-md px-4 text-center">
+        <div className="mx-auto max-w-lg px-4 text-center">
           <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-slate-100">
             <FileText className="h-10 w-10 text-slate-400" />
           </div>
           <h1 className="mt-6 text-2xl font-extrabold text-slate-900">No Applications Found</h1>
           <p className="mt-2 text-sm text-slate-500">
-            No applications linked to your phone number. If you submitted a Join Team form, make sure you&apos;re signed in with the same phone number.
+            Enter the phone number you used when applying to link your application.
           </p>
+
+          <div className="mt-6 text-left">
+            <label className="block text-sm font-bold text-slate-700 mb-1.5">Phone number used on application</label>
+            <div className="flex gap-2">
+              <input
+                type="tel"
+                value={phoneInput}
+                onChange={(e) => setPhoneInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleLinkApplication() }}
+                placeholder="e.g. 0772 123 456"
+                className="flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
+              />
+              <button
+                onClick={handleLinkApplication}
+                disabled={linking || !phoneInput.trim()}
+                className="inline-flex items-center gap-2 rounded-2xl bg-teal-600 px-6 py-3 text-sm font-bold text-white transition hover:bg-teal-700 disabled:opacity-50"
+              >
+                {linking ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                Find
+              </button>
+            </div>
+          </div>
+
+          {searchedPhone && applicants.length === 0 && (
+            <p className="mt-4 text-sm text-slate-400">
+              No application found for <strong>{searchedPhone}</strong>. Double-check the number or{' '}
+              <Link to="/join-our-team" className="text-teal-600 underline">apply now</Link>.
+            </p>
+          )}
+
           <div className="mt-6 flex flex-col gap-3">
-            <Link
-              to="/join-our-team"
-              className="rounded-2xl bg-teal-600 px-6 py-3.5 text-sm font-bold text-white hover:bg-teal-700"
-            >
+            <Link to="/join-our-team" className="rounded-2xl bg-teal-600 px-6 py-3.5 text-sm font-bold text-white hover:bg-teal-700">
               Apply Now
             </Link>
             <Link to="/" className="text-sm text-teal-600 hover:underline">
@@ -92,6 +149,9 @@ export default function MyApplication() {
     <section className="min-h-screen bg-zinc-50 py-8">
       <div className="mx-auto max-w-3xl px-4 sm:px-6">
         <div className="mb-6 text-center">
+          <div className="inline-flex items-center gap-2 rounded-full bg-teal-100 px-4 py-1.5 text-xs font-bold text-teal-700 mb-3">
+            <UserCheck className="h-3.5 w-3.5" /> Linked to your account
+          </div>
           <h1 className="text-2xl font-extrabold text-slate-900">My Application</h1>
           <p className="mt-1 text-sm text-slate-500">
             Track the status of your applications to join Traamand

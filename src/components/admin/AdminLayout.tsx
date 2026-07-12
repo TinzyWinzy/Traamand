@@ -2,19 +2,49 @@ import { useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Users, UserCircle, BookOpen, DollarSign,
-  Menu, X, LogOut, ChevronDown, Shield, UserPlus,
+  Menu, X, LogOut, Shield, UserPlus, Smartphone, Clock,
+  CheckCircle, BarChart3, Video,
 } from 'lucide-react'
 import { signOut } from 'firebase/auth'
 import { auth } from '../../firebase/config'
 import { useAuthStore } from '../../stores/authStore'
 
-const NAV_ITEMS = [
-  { label: 'Dashboard', to: '/admin', icon: LayoutDashboard, end: true },
-  { label: 'Applicants', to: '/admin/applicants', icon: UserPlus },
-  { label: 'Workers', to: '/admin/workers', icon: Users },
-  { label: 'Clients', to: '/admin/clients', icon: UserCircle },
-  { label: 'Bookings', to: '/admin/bookings', icon: BookOpen },
-  { label: 'Payments', to: '/admin/payments', icon: DollarSign },
+const NAV_SECTIONS: { label: string; items: { label: string; to: string; icon: any }[] }[] = [
+  {
+    label: 'Overview',
+    items: [
+      { label: 'Dashboard', to: '/admin', icon: LayoutDashboard },
+    ],
+  },
+  {
+    label: 'Operations',
+    items: [
+      { label: 'Applicants', to: '/admin/applicants', icon: UserPlus },
+      { label: 'Workers', to: '/admin/workers', icon: Users },
+      { label: 'Bookings', to: '/admin/bookings', icon: BookOpen },
+      { label: 'Verifier Tasks', to: '/admin/tasks', icon: CheckCircle },
+    ],
+  },
+  {
+    label: 'People',
+    items: [
+      { label: 'Clients', to: '/admin/clients', icon: UserCircle },
+      { label: 'Users', to: '/admin/users', icon: Shield },
+    ],
+  },
+  {
+    label: 'Finance',
+    items: [
+      { label: 'Payments', to: '/admin/payments', icon: DollarSign },
+      { label: 'Payouts', to: '/admin/payouts', icon: Smartphone },
+    ],
+  },
+  {
+    label: 'Content',
+    items: [
+      { label: 'Creator Submissions', to: '/admin/content', icon: Video },
+    ],
+  },
 ]
 
 export default function AdminLayout() {
@@ -56,24 +86,31 @@ export default function AdminLayout() {
           </button>
         </div>
 
-        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
-          {NAV_ITEMS.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.end}
-              onClick={() => setSidebarOpen(false)}
-              className={({ isActive }) =>
-                `flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
-                  isActive
-                    ? 'bg-teal-50 text-teal-700'
-                    : 'text-slate-600 hover:bg-slate-100'
-                }`
-              }
-            >
-              <item.icon className="h-5 w-5" />
-              {item.label}
-            </NavLink>
+        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-4">
+          {NAV_SECTIONS.map((section) => (
+            <div key={section.label}>
+              <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">{section.label}</p>
+              <div className="space-y-0.5">
+                {section.items.map((item) => (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    end={item.to === '/admin'}
+                    onClick={() => setSidebarOpen(false)}
+                    className={({ isActive }) =>
+                      `flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
+                        isActive
+                          ? 'bg-teal-50 text-teal-700'
+                          : 'text-slate-600 hover:bg-slate-100'
+                      }`
+                    }
+                  >
+                    <item.icon className="h-5 w-5" />
+                    {item.label}
+                  </NavLink>
+                ))}
+              </div>
+            </div>
           ))}
         </nav>
 

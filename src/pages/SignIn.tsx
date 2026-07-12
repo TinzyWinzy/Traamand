@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { useNavigate, Link, useSearchParams } from 'react-router-dom'
 import { Shield, Loader2, ArrowLeft } from 'lucide-react'
 import { signInWithGoogle, createOrUpdateUser } from '../firebase/auth'
 import { useAuthStore } from '../stores/authStore'
@@ -7,10 +7,18 @@ import { COMPANY_NAME } from '../lib/constants'
 
 export default function SignIn() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { setUser, setFirebaseUser } = useAuthStore()
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    const ref = searchParams.get('ref')
+    if (ref) {
+      sessionStorage.setItem('traamand_ref', ref.toUpperCase())
+    }
+  }, [searchParams])
 
   const handleGoogle = async () => {
     setError('')

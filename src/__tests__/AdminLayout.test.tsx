@@ -69,6 +69,10 @@ describe('AdminLayout', () => {
     expect(screen.getByText('Clients')).toBeInTheDocument()
     expect(screen.getByText('Bookings')).toBeInTheDocument()
     expect(screen.getByText('Payments')).toBeInTheDocument()
+    expect(screen.getByText('Verifier Tasks')).toBeInTheDocument()
+    expect(screen.getByText('Users')).toBeInTheDocument()
+    expect(screen.getByText('Payouts')).toBeInTheDocument()
+    expect(screen.getByText('Creator Submissions')).toBeInTheDocument()
   })
 
   it('displays the admin user name and role', async () => {
