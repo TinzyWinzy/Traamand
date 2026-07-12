@@ -52,10 +52,6 @@ export const sendBookingConfirmation = onDocumentUpdated(
       const client = clientSnap.data()
 
       if (client) {
-        console.log(`Sending confirmation for booking ${event.params.bookingId}`)
-        console.log(`  Client: ${client.name} (${client.phone})`)
-        console.log(`  To: ${after.workerId}`)
-
         await event.data?.after.ref.update({
           notificationSent: true,
           notificationSentAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -187,14 +183,14 @@ export const processPaynowPayment = onCall(async (request) => {
     })
 
     const text = await response.text()
+    const params = new URLSearchParams(text)
 
-    const pollUrlMatch = text.match(/PollUrl=(.+)/i)
-    const browserUrlMatch = text.match(/BrowserUrl=(.+)/i)
-    const errorMatch = text.match(/Error=(.+)/i)
+    const pollUrl = params.get('PollUrl')
+    const browserUrl = params.get('BrowserUrl')
 
-    if (pollUrlMatch && browserUrlMatch) {
+    if (pollUrl && browserUrl) {
       await bookingRef.update({
-        paynowPollUrl: pollUrlMatch[1].trim(),
+        paynowPollUrl: pollUrl,
         paynowReference: reference,
         paynowStatus: 'pending',
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -202,13 +198,14 @@ export const processPaynowPayment = onCall(async (request) => {
 
       return {
         success: true,
-        redirectUrl: browserUrlMatch[1].trim(),
-        pollUrl: pollUrlMatch[1].trim(),
+        redirectUrl: browserUrl,
+        pollUrl,
         reference,
       }
     }
 
-    return { success: false, error: errorMatch?.[1]?.trim() || 'Payment initiation failed' }
+    const error = params.get('Error')
+    return { success: false, error: error || 'Payment initiation failed' }
   } catch (err) {
     return { success: false, error: (err as Error).message }
   }
@@ -222,10 +219,7 @@ export const sendReplacementAlert = onDocumentUpdated(
     if (!after) return
 
     if (!before?.replacementRequested && after.replacementRequested) {
-      console.log(`Replacement requested for booking ${event.params.bookingId}`)
-      console.log(`  Reason: ${after.replacementReason || 'Not specified'}`)
-      console.log(`  Client: ${after.clientId}`)
-      console.log(`  Worker: ${after.workerId}`)
+      // Replacement requested - business logic processed
     }
   }
 )

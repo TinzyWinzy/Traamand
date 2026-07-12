@@ -40,12 +40,7 @@ export async function getAvailableWorkers(): Promise<Worker[]> {
   try {
     const snap = await getDocs(workersCol())
     const all = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Worker)
-    console.log('[getAvailableWorkers] total workers in Firestore:', all.length)
-    if (all.length > 0) {
-      console.log('[getAvailableWorkers] first worker:', { isActive: all[0].isActive, availability: all[0].availability })
-    }
     const available = all.filter((w) => w.isActive && w.availability?.status === 'available')
-    console.log('[getAvailableWorkers] available workers:', available.length)
     return available
   } catch (err) {
     console.error('[getAvailableWorkers] Firestore error:', err)

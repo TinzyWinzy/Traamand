@@ -1,19 +1,32 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Menu, Phone, MapPin, Shield, X, LogOut, DollarSign, Gift } from 'lucide-react'
+import { Menu, Phone, MapPin, Shield, X, LogOut, ChevronDown, LayoutDashboard, CheckCircle2, Briefcase, FileText, Gift, PenTool, HandshakeIcon } from 'lucide-react'
 import { NAV_LINKS, PRIMARY_PHONE, ADDRESS } from '../../lib/constants'
 import { useAuthStore } from '../../stores/authStore'
 import { logout } from '../../firebase/auth'
 
 export default function Navbar() {
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
   const location = useLocation()
   const closeDrawer = useCallback(() => setDrawerOpen(false), [])
   const { user, isAuthenticated, isLoading } = useAuthStore()
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
   const handleSignOut = async () => {
-    await logout()
     closeDrawer()
+    await logout()
   }
 
   return (
@@ -82,58 +95,122 @@ export default function Navbar() {
           <div className="hidden md:flex items-center gap-3">
             {!isLoading && isAuthenticated && user ? (
               <>
-                {user.role === 'admin' && (
-                  <Link
-                    to="/admin"
-                    className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
+                {/* User Dropdown Menu */}
+                <div className="relative" ref={dropdownRef}>
+                  <button
+                    onClick={() => setDropdownOpen(!dropdownOpen)}
+                    className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
                   >
-                    Dashboard
-                  </Link>
-                )}
-                {user.role === 'verifier' && (
-                  <Link
-                    to="/verifier"
-                    className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
-                  >
-                    Verify
-                  </Link>
-                )}
-                <Link
-                  to="/my-hires"
-                  className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
-                >
-                  My Hires
-                </Link>
-                <Link
-                  to="/my-application"
-                  className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
-                >
-                  My Application
-                </Link>
-                <Link
-                  to="/my-referrals"
-                  className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-50"
-                >
-                  <Gift className="h-4 w-4" />
-                  <span>${user.earningsBalance?.toFixed(0) || '0'}</span>
-                </Link>
-                <Link
-                  to="/creator"
-                  className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
-                >
-                  Create
-                </Link>
-                <Link
-                  to="/sponsor"
-                  className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
-                >
-                  Sponsor
-                </Link>
-                <div className="flex items-center gap-2 border-l border-slate-200 pl-3">
-                  <span className="text-sm text-slate-400">{user.name?.split(' ')[0]}</span>
-                  <button onClick={handleSignOut} className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-red-600" title="Sign Out">
-                    <LogOut className="h-4 w-4" />
+                    <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                    {user.name?.split(' ')[0]}
+                    <ChevronDown className="h-4 w-4" />
                   </button>
+
+                  {/* Dropdown Menu */}
+                  {dropdownOpen && (
+                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-slate-200 z-50">
+                      {/* User Info Header */}
+                      <div className="border-b border-slate-100 px-4 py-3">
+                        <p className="text-sm font-semibold text-slate-900">{user.name}</p>
+                        <p className="text-xs text-slate-500 capitalize">{user.role || 'User'}</p>
+                      </div>
+
+                      {/* Menu Items */}
+                      <div className="py-2">
+                        {/* Earnings */}
+                        <Link
+                          to="/my-referrals"
+                          onClick={() => setDropdownOpen(false)}
+                          className="flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-emerald-700 hover:bg-emerald-50 transition"
+                        >
+                          <Gift className="h-4 w-4" />
+                          <div>
+                            <div>Refer & Earn</div>
+                            <div className="text-xs font-normal text-emerald-600">${user.earningsBalance?.toFixed(0) || '0'}</div>
+                          </div>
+                        </Link>
+
+                        {/* My Hires */}
+                        <Link
+                          to="/my-hires"
+                          onClick={() => setDropdownOpen(false)}
+                          className="flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
+                        >
+                          <Briefcase className="h-4 w-4" />
+                          My Hires
+                        </Link>
+
+                        {/* My Application */}
+                        <Link
+                          to="/my-application"
+                          onClick={() => setDropdownOpen(false)}
+                          className="flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
+                        >
+                          <FileText className="h-4 w-4" />
+                          My Application
+                        </Link>
+
+                        {/* Admin Dashboard */}
+                        {user.role === 'admin' && (
+                          <Link
+                            to="/admin"
+                            onClick={() => setDropdownOpen(false)}
+                            className="flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-blue-700 hover:bg-blue-50 transition"
+                          >
+                            <LayoutDashboard className="h-4 w-4" />
+                            Dashboard
+                          </Link>
+                        )}
+
+                        {/* Verifier */}
+                        {user.role === 'verifier' && (
+                          <Link
+                            to="/verifier"
+                            onClick={() => setDropdownOpen(false)}
+                            className="flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-amber-700 hover:bg-amber-50 transition"
+                          >
+                            <CheckCircle2 className="h-4 w-4" />
+                            Verify Tasks
+                          </Link>
+                        )}
+
+                        {/* Creator */}
+                        <Link
+                          to="/creator"
+                          onClick={() => setDropdownOpen(false)}
+                          className="flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
+                        >
+                          <PenTool className="h-4 w-4" />
+                          Create Content
+                        </Link>
+
+                        {/* Sponsor */}
+                        <Link
+                          to="/sponsor"
+                          onClick={() => setDropdownOpen(false)}
+                          className="flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
+                        >
+                          <HandshakeIcon className="h-4 w-4" />
+                          Sponsor
+                        </Link>
+                      </div>
+
+                      {/* Divider */}
+                      <div className="border-t border-slate-100" />
+
+                      {/* Sign Out */}
+                      <button
+                        onClick={async () => {
+                          setDropdownOpen(false)
+                          await logout()
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-50 transition"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        Sign Out
+                      </button>
+                    </div>
+                  )}
                 </div>
               </>
             ) : (

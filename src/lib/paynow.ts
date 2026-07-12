@@ -45,15 +45,16 @@ export async function initiatePayment(
     })
 
     const text = await response.text()
+    const params = new URLSearchParams(text)
 
-    const pollUrl = extractValue(text, 'PollUrl')
-    const redirectUrl = extractValue(text, 'BrowserUrl')
+    const pollUrl = params.get('PollUrl')
+    const redirectUrl = params.get('BrowserUrl')
 
     if (pollUrl && redirectUrl) {
       return { success: true, redirectUrl, pollUrl }
     }
 
-    const error = extractValue(text, 'Error')
+    const error = params.get('Error')
     return { success: false, error: error || 'Payment initiation failed' }
   } catch (err) {
     return { success: false, error: (err as Error).message }
@@ -67,7 +68,8 @@ export async function pollPaymentStatus(pollUrl: string): Promise<{
   try {
     const response = await fetch(pollUrl)
     const text = await response.text()
-    const status = extractValue(text, 'status')
+    const params = new URLSearchParams(text)
+    const status = params.get('status')
 
     return {
       paid: status?.toLowerCase() === 'paid',
@@ -76,10 +78,4 @@ export async function pollPaymentStatus(pollUrl: string): Promise<{
   } catch {
     return { paid: false, status: 'error' }
   }
-}
-
-function extractValue(text: string, key: string): string | null {
-  const regex = new RegExp(`${key}=(.+)`, 'i')
-  const match = text.match(regex)
-  return match?.[1]?.trim() || null
 }
