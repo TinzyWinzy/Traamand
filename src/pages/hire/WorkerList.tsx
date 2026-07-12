@@ -50,9 +50,11 @@ export default function WorkerList() {
             'Bar Ladies': ['bartending', 'mixology', 'bar'],
           }
           const keywords = skillMap[category.name] || [category.name.toLowerCase()]
-          const filtered = all.filter((w) =>
-            w.skills.some((s) => keywords.some((k) => s.includes(k)))
-          )
+          const filtered = all
+            .filter((w) =>
+              w.skills.some((s) => keywords.some((k) => s.includes(k)))
+            )
+            .sort((a, b) => b.rating - a.rating)
           setWorkers(filtered)
         } else {
           setWorkers(all)

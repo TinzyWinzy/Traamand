@@ -39,8 +39,7 @@ export async function getWorkers(constraints: QueryConstraint[] = []): Promise<W
 export async function getAvailableWorkers(): Promise<Worker[]> {
   return getWorkers([
     where('availability.status', '==', 'available'),
-    orderBy('rating', 'desc'),
-    limit(50),
+    limit(100),
   ])
 }
 
