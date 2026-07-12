@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { useForm } from '@formspree/react'
 import { Check, Upload, Loader2, Briefcase, Clock, Building2, TrendingUp } from 'lucide-react'
 import { EDUCATION_LEVELS, LANGUAGES, SERVICE_CATEGORIES } from '../../lib/constants'
+import { createApplicant } from '../../firebase/firestore'
+import { uploadApplicantFile } from '../../lib/upload'
 
 const FORM_ID = 'mrewbdrv'
 
@@ -37,10 +39,11 @@ const INITIAL: FormData = {
 export default function JoinTeamForm() {
   const [data, setData] = useState<FormData>(INITIAL)
   const [state, handleSubmit] = useForm(FORM_ID)
-  const [nationalIdName, setNationalIdName] = useState('')
-  const [policeClearanceName, setPoliceClearanceName] = useState('')
+  const [nationalIdFile, setNationalIdFile] = useState<File | null>(null)
+  const [policeClearanceFile, setPoliceClearanceFile] = useState<File | null>(null)
   const [errors, setErrors] = useState<Partial<Record<string, string>>>({})
   const [didValidate, setDidValidate] = useState(false)
+  const [uploading, setUploading] = useState(false)
 
   const update = (field: keyof FormData, value: string) => {
     setData((prev) => ({ ...prev, [field]: value }))
@@ -60,17 +63,56 @@ export default function JoinTeamForm() {
     if (!data.nextOfKinContact.trim()) errs.nextOfKinContact = 'Next of kin contact is required'
     if (!data.education) errs.education = 'Select your highest level of education'
     if (!data.primaryLanguage) errs.primaryLanguage = 'Select your primary language'
-    if (!nationalIdName) errs.nationalId = 'National ID upload is required'
-    if (!policeClearanceName) errs.policeClearance = 'Police clearance upload is required'
+    if (!nationalIdFile) errs.nationalId = 'National ID upload is required'
+    if (!policeClearanceFile) errs.policeClearance = 'Police clearance upload is required'
 
     setErrors(errs)
     return Object.keys(errs).length === 0
   }
 
-  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setDidValidate(true)
     if (!validate()) return
+    setUploading(true)
+
+    try {
+      const applicantId = await createApplicant({
+        position: data.position,
+        fullName: data.fullName,
+        phone: data.phone,
+        age: Number(data.age),
+        yearsOfExperience: Number(data.yearsOfExperience),
+        nextOfKinContact: data.nextOfKinContact,
+        education: data.education,
+        primaryLanguage: data.primaryLanguage,
+        nationalIdUrl: nationalIdFile?.name || '',
+        policeClearanceUrl: policeClearanceFile?.name || '',
+        status: 'new',
+        notes: '',
+        reviewedBy: '',
+        reviewedAt: null,
+        interviewDate: null,
+        interviewNotes: '',
+        convertedWorkerId: '',
+        source: 'join_team_form',
+      })
+
+      if (nationalIdFile) {
+        const url = await uploadApplicantFile(nationalIdFile, applicantId, 'nationalId')
+        const { updateApplicant } = await import('../../firebase/firestore')
+        await updateApplicant(applicantId, { nationalIdUrl: url })
+      }
+      if (policeClearanceFile) {
+        const url = await uploadApplicantFile(policeClearanceFile, applicantId, 'policeClearance')
+        const { updateApplicant } = await import('../../firebase/firestore')
+        await updateApplicant(applicantId, { policeClearanceUrl: url })
+      }
+    } catch (err) {
+      console.error('Failed to save applicant to Firestore:', err)
+    }
+
+    setUploading(false)
     handleSubmit(e)
   }
 
@@ -111,8 +153,8 @@ export default function JoinTeamForm() {
         <input type="hidden" name="nextOfKinContact" value={data.nextOfKinContact} />
         <input type="hidden" name="education" value={data.education} />
         <input type="hidden" name="primaryLanguage" value={data.primaryLanguage} />
-        <input type="hidden" name="nationalId" value={nationalIdName} />
-        <input type="hidden" name="policeClearance" value={policeClearanceName} />
+        <input type="hidden" name="nationalId" value={nationalIdFile?.name || ''} />
+        <input type="hidden" name="policeClearance" value={policeClearanceFile?.name || ''} />
         <input type="hidden" name="_subject" value={data.position ? `New Application - ${data.position} - Join Our Team` : 'New Job Seeker Application - Join Our Team'} />
 
         <div className="mb-8">
@@ -236,25 +278,25 @@ export default function JoinTeamForm() {
               <FileUpload
                 label="National ID"
                 error={didValidate ? errors.nationalId : undefined}
-                fileName={nationalIdName}
-                onChange={(name) => setNationalIdName(name)}
+                fileName={nationalIdFile?.name || ''}
+                onChange={(file) => setNationalIdFile(file)}
               />
               <FileUpload
                 label="Police Clearance"
                 error={didValidate ? errors.policeClearance : undefined}
-                fileName={policeClearanceName}
-                onChange={(name) => setPoliceClearanceName(name)}
+                fileName={policeClearanceFile?.name || ''}
+                onChange={(file) => setPoliceClearanceFile(file)}
               />
             </div>
           </div>
 
           <button
             type="submit"
-            disabled={state.submitting}
+            disabled={state.submitting || uploading}
             className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-teal-600 px-6 py-4 text-sm font-bold text-white transition hover:bg-teal-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {state.submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-            {state.submitting ? 'Submitting...' : 'Submit Application'}
+            {(state.submitting || uploading) && <Loader2 className="h-4 w-4 animate-spin" />}
+            {uploading ? 'Uploading files...' : state.submitting ? 'Submitting...' : 'Submit Application'}
           </button>
         </div>
       </form>
@@ -281,7 +323,7 @@ function FileUpload({
   label: string
   error?: string
   fileName: string
-  onChange: (name: string) => void
+  onChange: (file: File) => void
 }) {
   return (
     <div>
@@ -305,7 +347,10 @@ function FileUpload({
           type="file"
           accept="image/*,.pdf"
           className="hidden"
-          onChange={(e) => onChange(e.target.files?.[0]?.name ?? '')}
+          onChange={(e) => {
+            const file = e.target.files?.[0]
+            if (file) onChange(file)
+          }}
         />
       </label>
       {error && <p className="mt-1 text-xs text-red-600">{error}</p>}

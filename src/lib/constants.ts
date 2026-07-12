@@ -52,6 +52,26 @@ export const SERVICE_CATEGORIES = [
   "Maid", "Nanny", "Chef", "Gardener", "Nurse Aide", "Driver", "Sales Lady", "Bar Lady",
 ] as const
 
+export interface CategoryMeta {
+  id: string
+  name: string
+  slug: string
+  description: string
+  icon: string
+  sortOrder: number
+}
+
+export const CATEGORIES: CategoryMeta[] = [
+  { id: 'maids', name: 'Maid', slug: 'maids', description: 'Housekeeping, cleaning & laundry', icon: 'Sparkles', sortOrder: 1 },
+  { id: 'nannies', name: 'Nanny', slug: 'nannies', description: 'Childcare, newborn care & tutoring', icon: 'Baby', sortOrder: 2 },
+  { id: 'chefs', name: 'Chef', slug: 'chefs', description: 'Cooking, baking & meal planning', icon: 'ChefHat', sortOrder: 3 },
+  { id: 'gardeners', name: 'Gardener', slug: 'gardeners', description: 'Lawn care, landscaping & pruning', icon: 'Trees', sortOrder: 4 },
+  { id: 'nurse-aides', name: 'Nurse Aide', slug: 'nurse-aides', description: 'Elderly care, medication & mobility support', icon: 'Heart', sortOrder: 5 },
+  { id: 'drivers', name: 'Driver', slug: 'drivers', description: 'Chauffeur, school runs & fleet management', icon: 'Car', sortOrder: 6 },
+  { id: 'sales-ladies', name: 'Sales Lady', slug: 'sales-ladies', description: 'Retail, customer service & merchandising', icon: 'ShoppingBag', sortOrder: 7 },
+  { id: 'bar-ladies', name: 'Bar Lady', slug: 'bar-ladies', description: 'Bartending, mixology & event service', icon: 'Wine', sortOrder: 8 },
+]
+
 export interface Candidate {
   id: string
   category: "Nanny" | "Maid" | "Chef" | "Gardener" | "Nurse Aide" | "Driver" | "Sales Lady" | "Bar Lady"

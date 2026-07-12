@@ -1,3 +1,9 @@
 {
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "rewrites": [
+    {
+      "source": "/sitemap.xml",
+      "destination": "https://us-central1-studio-8895863664-52c12.cloudfunctions.net/sitemap"
+    },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
 }
