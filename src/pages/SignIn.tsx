@@ -18,11 +18,15 @@ export default function SignIn() {
   const [error, setError] = useState('')
   const [recaptchaReady, setRecaptchaReady] = useState(false)
 
+  const toE164 = (raw: string) =>
+    raw.startsWith('+') ? raw.replace(/\D/g, '') : `+263${raw.replace(/^0/, '').replace(/\D/g, '')}`
+
   const handleSendOTP = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
 
-    if (!phone.match(/^\+263\d{9}$/) && !phone.match(/^0\d{9}$/)) {
+    const digits = phone.replace(/\D/g, '')
+    if (!digits.match(/^(?:\+263|0)?[17]\d{8}$/)) {
       setError('Enter a valid Zimbabwe phone number (e.g. 0772123456 or +263772123456)')
       return
     }
@@ -34,7 +38,7 @@ export default function SignIn() {
         setRecaptchaReady(true)
         await new Promise((r) => setTimeout(r, 1000))
       }
-      await sendOTP(phone)
+      await sendOTP(toE164(phone))
       setStep('otp')
     } catch (err) {
       setError('Failed to send OTP. Ensure the phone number is correct.')
@@ -51,14 +55,15 @@ export default function SignIn() {
     try {
       const fbUser = await verifyOTP(otp)
       if (fbUser) {
-        const user = await createOrUpdateUser(fbUser, { name: name || 'Client', phone })
+        const normalized = toE164(phone)
+        const user = await createOrUpdateUser(fbUser, { name: name || 'Client', phone: normalized })
         setUser(user)
         setFirebaseUser(fbUser)
 
         if (user.role === 'admin') {
           navigate('/admin')
         } else {
-          const apps = await getApplicantsByPhone(phone)
+          const apps = await getApplicantsByPhone(normalized)
           if (apps.length > 0) {
             navigate('/my-application')
           } else {
