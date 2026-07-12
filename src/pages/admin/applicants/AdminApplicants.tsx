@@ -97,6 +97,7 @@ export default function AdminApplicants() {
     const workerData = {
       firstName: applicant.fullName.split(' ')[0] || '',
       lastName: applicant.fullName.split(' ').slice(1).join(' ') || '',
+      category: applicant.position,
       displayName: applicant.fullName,
       slug: generateWorkerSlug(
         applicant.fullName.split(' ')[0] || '',
@@ -116,7 +117,7 @@ export default function AdminApplicants() {
       },
       photos: [],
       bio: '',
-      languages: [applicant.primaryLanguage] || [],
+      languages: applicant.primaryLanguage ? [applicant.primaryLanguage] : [],
       skills: [applicant.position.toLowerCase().replace(/\s+/g, '-')],
       experienceYears: applicant.yearsOfExperience,
       previousEmployers: 0,

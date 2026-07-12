@@ -30,6 +30,13 @@ const STATUS_COLORS: Record<string, string> = {
   rejected: 'bg-red-100 text-red-700',
 }
 
+function formatDate(ts: unknown) {
+  if (!ts) return '—'
+  const d = (ts as { toDate?: () => Date }).toDate?.()
+  if (!d) return '—'
+  return d.toLocaleDateString('en-ZW', { month: 'long', day: 'numeric', year: 'numeric' })
+}
+
 export default function MyApplication() {
   const { user } = useAuthStore()
   const [applicants, setApplicants] = useState<Applicant[]>([])
@@ -162,9 +169,7 @@ export default function MyApplication() {
                     <div>
                       <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Applied</p>
                       <p className="font-medium text-slate-700 mt-1">
-                        {applicant.createdAt
-                          ? new Date((applicant.createdAt as { toDate?: () => Date }).toDate?.() || applicant.createdAt as string).toLocaleDateString('en-ZW', { month: 'long', day: 'numeric', year: 'numeric' })
-                          : '—'}
+                        {formatDate(applicant.createdAt)}
                       </p>
                     </div>
                     <div>
@@ -186,8 +191,7 @@ export default function MyApplication() {
                     <div className="flex items-center gap-2 rounded-xl bg-purple-50 border border-purple-200 px-4 py-3 text-sm">
                       <Calendar className="h-4 w-4 text-purple-600" />
                       <span className="font-medium text-purple-800">
-                        Interview scheduled:{' '}
-                        {new Date((applicant.interviewDate as { toDate?: () => Date }).toDate?.() || applicant.interviewDate as string).toLocaleDateString('en-ZW', { weekday: 'long', month: 'long', day: 'numeric' })}
+                        Interview scheduled: {formatDate(applicant.interviewDate)}
                       </span>
                     </div>
                   )}

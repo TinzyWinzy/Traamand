@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
+import type { Timestamp } from 'firebase/firestore'
 import type { Applicant } from '../types'
 
 const mockNavigate = vi.fn()
@@ -92,8 +93,8 @@ const makeApplicant = (overrides: Partial<Applicant> = {}): Applicant => ({
   interviewNotes: '',
   convertedWorkerId: '',
   source: 'join_team_form',
-  createdAt: null as unknown,
-  updatedAt: null as unknown,
+  createdAt: { seconds: 0, nanoseconds: 0 } as Timestamp,
+  updatedAt: { seconds: 0, nanoseconds: 0 } as Timestamp,
   ...overrides,
 })
 

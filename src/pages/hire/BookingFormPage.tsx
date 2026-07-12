@@ -18,7 +18,7 @@ import { Timestamp } from 'firebase/firestore'
 import { getWorker, createBooking } from '../../firebase/firestore'
 import { bookingSchema, type BookingFormSchema } from '../../lib/validation'
 import { useAuthStore } from '../../stores/authStore'
-import type { Worker } from '../../types'
+import type { Worker, ServiceCategory } from '../../types'
 
 type Step = 1 | 2 | 3
 
@@ -98,7 +98,7 @@ export default function BookingFormPage() {
       const bookingId = await createBooking({
         clientId: user.id,
         workerId: worker.id,
-        serviceType: worker.category,
+        serviceType: (worker.category || 'Maid') as ServiceCategory,
         workType: data.workType,
         startDate: new Date(data.startDate) as unknown as Timestamp,
         duration: 'ongoing',

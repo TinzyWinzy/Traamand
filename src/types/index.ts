@@ -1,6 +1,6 @@
 import type { Timestamp } from 'firebase/firestore'
 
-export type VerificationStatus = 'pending' | 'verified' | 'premium'
+export type WorkerVerificationStatus = 'pending' | 'verified' | 'premium'
 export type AvailabilityStatus = 'available' | 'booked' | 'off'
 export type WorkType = 'live-in' | 'daily' | 'part-time' | 'temporary'
 export type BookingStatus =
@@ -54,7 +54,8 @@ export interface Worker {
   lastName: string
   displayName: string
   slug: string
-  verificationStatus: VerificationStatus
+  category: string
+  verificationStatus: WorkerVerificationStatus
   divineSeal: DivineSeal
   photos: string[]
   bio: string
