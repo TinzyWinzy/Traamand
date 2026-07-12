@@ -1,11 +1,8 @@
 import { useState } from 'react'
-import { useForm } from '@formspree/react'
 import { Check, Upload, Loader2, Briefcase, Clock, Building2, TrendingUp } from 'lucide-react'
 import { EDUCATION_LEVELS, LANGUAGES, SERVICE_CATEGORIES } from '../../lib/constants'
 import { createApplicant } from '../../firebase/firestore'
 import { uploadApplicantFile } from '../../lib/upload'
-
-const FORM_ID = 'mrewbdrv'
 
 const SELLING_POINTS = [
   { icon: Briefcase, text: 'Immediate Job Placement — quick matching with families and businesses looking for help.' },
@@ -38,12 +35,14 @@ const INITIAL: FormData = {
 
 export default function JoinTeamForm() {
   const [data, setData] = useState<FormData>(INITIAL)
-  const [state, handleSubmit] = useForm(FORM_ID)
   const [nationalIdFile, setNationalIdFile] = useState<File | null>(null)
   const [policeClearanceFile, setPoliceClearanceFile] = useState<File | null>(null)
   const [errors, setErrors] = useState<Partial<Record<string, string>>>({})
   const [didValidate, setDidValidate] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
+  const [applicantRef, setApplicantRef] = useState('')
+  const [submitError, setSubmitError] = useState('')
 
   const update = (field: keyof FormData, value: string) => {
     setData((prev) => ({ ...prev, [field]: value }))
@@ -75,6 +74,7 @@ export default function JoinTeamForm() {
     setDidValidate(true)
     if (!validate()) return
     setUploading(true)
+    setSubmitError('')
 
     try {
       const applicantId = await createApplicant({
@@ -98,25 +98,32 @@ export default function JoinTeamForm() {
         source: 'join_team_form',
       })
 
+      setApplicantRef(applicantId)
+      setSubmitted(true)
+
       if (nationalIdFile) {
-        const url = await uploadApplicantFile(nationalIdFile, applicantId, 'nationalId')
-        const { updateApplicant } = await import('../../firebase/firestore')
-        await updateApplicant(applicantId, { nationalIdUrl: url })
+        uploadApplicantFile(nationalIdFile, applicantId, 'nationalId').then((url) => {
+          import('../../firebase/firestore').then(({ updateApplicant }) =>
+            updateApplicant(applicantId, { nationalIdUrl: url })
+          )
+        })
       }
       if (policeClearanceFile) {
-        const url = await uploadApplicantFile(policeClearanceFile, applicantId, 'policeClearance')
-        const { updateApplicant } = await import('../../firebase/firestore')
-        await updateApplicant(applicantId, { policeClearanceUrl: url })
+        uploadApplicantFile(policeClearanceFile, applicantId, 'policeClearance').then((url) => {
+          import('../../firebase/firestore').then(({ updateApplicant }) =>
+            updateApplicant(applicantId, { policeClearanceUrl: url })
+          )
+        })
       }
     } catch (err) {
-      console.error('Failed to save applicant to Firestore:', err)
+      console.error('Failed to save applicant:', err)
+      setSubmitError('Something went wrong. Please try again or contact us on WhatsApp.')
     }
 
     setUploading(false)
-    handleSubmit(e)
   }
 
-  if (state.succeeded) {
+  if (submitted) {
     return (
       <div className="rounded-2xl bg-white p-8 text-center shadow-md sm:p-12">
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
@@ -127,6 +134,11 @@ export default function JoinTeamForm() {
           Thank you, {data.fullName}. We&apos;ll review your application and get back to you
           within 48 hours.
         </p>
+        {applicantRef && (
+          <p className="mt-4 text-xs text-slate-400">
+            Reference: <span className="font-mono font-semibold text-slate-600">{applicantRef.slice(0, 8)}</span>
+          </p>
+        )}
       </div>
     )
   }
@@ -145,18 +157,6 @@ export default function JoinTeamForm() {
       </div>
 
       <form onSubmit={onSubmit} className="rounded-2xl bg-white p-6 shadow-md sm:p-10">
-        <input type="hidden" name="position" value={data.position} />
-        <input type="hidden" name="fullName" value={data.fullName} />
-        <input type="hidden" name="phone" value={data.phone} />
-        <input type="hidden" name="age" value={data.age} />
-        <input type="hidden" name="yearsOfExperience" value={data.yearsOfExperience} />
-        <input type="hidden" name="nextOfKinContact" value={data.nextOfKinContact} />
-        <input type="hidden" name="education" value={data.education} />
-        <input type="hidden" name="primaryLanguage" value={data.primaryLanguage} />
-        <input type="hidden" name="nationalId" value={nationalIdFile?.name || ''} />
-        <input type="hidden" name="policeClearance" value={policeClearanceFile?.name || ''} />
-        <input type="hidden" name="_subject" value={data.position ? `New Application - ${data.position} - Join Our Team` : 'New Job Seeker Application - Join Our Team'} />
-
         <div className="mb-8">
           <h2 className="text-xl font-bold text-slate-900">Personal Information</h2>
           <p className="mt-1 text-sm text-slate-500">
@@ -290,13 +290,16 @@ export default function JoinTeamForm() {
             </div>
           </div>
 
+          {submitError && (
+            <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{submitError}</p>
+          )}
           <button
             type="submit"
-            disabled={state.submitting || uploading}
+            disabled={uploading}
             className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-teal-600 px-6 py-4 text-sm font-bold text-white transition hover:bg-teal-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {(state.submitting || uploading) && <Loader2 className="h-4 w-4 animate-spin" />}
-            {uploading ? 'Uploading files...' : state.submitting ? 'Submitting...' : 'Submit Application'}
+            {uploading && <Loader2 className="h-4 w-4 animate-spin" />}
+            {uploading ? 'Uploading files...' : 'Submit Application'}
           </button>
         </div>
       </form>

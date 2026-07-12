@@ -1,11 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
-
-const mockUseForm = vi.fn()
-
-vi.mock('@formspree/react', () => ({
-  useForm: (...args: unknown[]) => mockUseForm(...args),
-}))
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 
 vi.mock('../firebase/firestore', () => ({
   createApplicant: vi.fn().mockResolvedValue('mock-applicant-id'),
@@ -14,10 +8,6 @@ vi.mock('../firebase/firestore', () => ({
 describe('JoinTeamForm', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockUseForm.mockReturnValue([
-      { submitting: false, succeeded: false },
-      vi.fn(),
-    ])
   })
 
   it('renders all form fields', async () => {
@@ -70,15 +60,29 @@ describe('JoinTeamForm', () => {
   })
 
   it('shows success screen after form submission', async () => {
-    mockUseForm.mockReturnValue([
-      { submitting: false, succeeded: true },
-      vi.fn(),
-    ])
-
     const { default: JoinTeamForm } = await import('../components/forms/JoinTeamForm')
     render(<JoinTeamForm />)
 
-    expect(await screen.findByText('Application Received!')).toBeInTheDocument()
+    const combos = screen.getAllByRole('combobox')
+    fireEvent.change(combos[0], { target: { value: 'Maid' } })
+    fireEvent.change(combos[1], { target: { value: 'Primary' } })
+    fireEvent.change(combos[2], { target: { value: 'Shona' } })
+    fireEvent.change(screen.getByPlaceholderText(/e\.g\. Chido Dube/i), { target: { value: 'Test Person' } })
+    fireEvent.change(screen.getByPlaceholderText(/e\.g\. 0772/i), { target: { value: '0772123456' } })
+    fireEvent.change(screen.getByPlaceholderText(/e\.g\. 28/i), { target: { value: '30' } })
+    fireEvent.change(screen.getByPlaceholderText(/e\.g\. 5/i), { target: { value: '5' } })
+    fireEvent.change(screen.getByPlaceholderText(/name and phone number/i), { target: { value: 'Mother - 0773123456' } })
+
+    const fileInputs = document.querySelectorAll('input[type="file"]')
+    const file = new File(['dummy'], 'id.pdf', { type: 'application/pdf' })
+    fireEvent.change(fileInputs[0], { target: { files: [file] } })
+    fireEvent.change(fileInputs[1], { target: { files: [file] } })
+
+    fireEvent.click(screen.getByRole('button', { name: /submit application/i }))
+
+    await waitFor(() => {
+      expect(screen.getByText('Application Received!')).toBeInTheDocument()
+    })
     expect(screen.queryByText('Personal Information')).not.toBeInTheDocument()
   })
 })

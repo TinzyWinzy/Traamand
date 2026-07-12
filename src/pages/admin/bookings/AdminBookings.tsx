@@ -192,12 +192,33 @@ export default function AdminBookings() {
                     </div>
                     <div>
                       <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Payment</p>
-                      <span className={`inline-flex items-center gap-1 mt-1 rounded-full px-2 py-0.5 text-xs font-semibold ${
-                        booking.placementFeePaid ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
-                      }`}>
-                        {booking.placementFeePaid ? <CheckCircle className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
-                        {booking.placementFeePaid ? 'Paid' : 'Pending'}
-                      </span>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${
+                          booking.placementFeePaid ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                        }`}>
+                          {booking.placementFeePaid ? <CheckCircle className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
+                          {booking.placementFeePaid ? 'Paid' : 'Pending'}
+                        </span>
+                        <button
+                          onClick={async () => {
+                            try {
+                              await updateDoc(doc(db, 'bookings', booking.id), {
+                                placementFeePaid: !booking.placementFeePaid,
+                                updatedAt: serverTimestamp(),
+                              })
+                              setBookings((prev) =>
+                                prev.map((b) => (b.id === booking.id ? { ...b, placementFeePaid: !b.placementFeePaid } : b))
+                              )
+                              addToast(`Payment marked as ${booking.placementFeePaid ? 'pending' : 'paid'}`, 'success')
+                            } catch {
+                              addToast('Failed to toggle payment', 'error')
+                            }
+                          }}
+                          className="text-[10px] font-semibold text-slate-400 underline hover:text-slate-600"
+                        >
+                          {booking.placementFeePaid ? 'Mark unpaid' : 'Mark paid'}
+                        </button>
+                      </div>
                     </div>
                     <div>
                       <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Address</p>

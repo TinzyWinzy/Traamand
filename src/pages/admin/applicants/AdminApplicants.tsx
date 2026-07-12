@@ -179,6 +179,24 @@ export default function AdminApplicants() {
     setVerifying(false)
   }
 
+  const setManualVerification = (idStatus: 'pass' | 'fail', policeStatus: 'pass' | 'fail') => {
+    const id = makeVerification({
+      status: idStatus,
+      method: 'manual',
+      confidence: idStatus === 'pass' ? 100 : 0,
+      verifiedBy: 'admin',
+    })
+    const police = makeVerification({
+      status: policeStatus,
+      method: 'manual',
+      confidence: policeStatus === 'pass' ? 100 : 0,
+      verifiedBy: 'admin',
+    })
+    const resume = makeVerification({ status: 'pass', issues: [], extractedData: { note: 'Resume parsing not available' } })
+    const result = computeOverallVerification(id, resume, police)
+    setVerification(result)
+  }
+
   const resetVerification = () => {
     setVerification(null)
     setVerifying(false)
@@ -519,14 +537,30 @@ export default function AdminApplicants() {
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Verification</p>
-                    <button
-                      onClick={() => runVerification(applicant)}
-                      disabled={verifying}
-                      className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-50"
-                    >
-                      {verifying ? <Loader2 className="h-3 w-3 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5" />}
-                      {verifying ? 'Verifying...' : 'Verify Documents'}
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => setManualVerification('pass', 'pass')}
+                          className="rounded-lg bg-emerald-100 px-2 py-1 text-[10px] font-semibold text-emerald-700 transition hover:bg-emerald-200"
+                        >
+                          Mark All Pass
+                        </button>
+                        <button
+                          onClick={() => setManualVerification('fail', 'fail')}
+                          className="rounded-lg bg-red-100 px-2 py-1 text-[10px] font-semibold text-red-700 transition hover:bg-red-200"
+                        >
+                          Mark All Fail
+                        </button>
+                      </div>
+                      <button
+                        onClick={() => runVerification(applicant)}
+                        disabled={verifying}
+                        className="inline-flex items-center gap-1 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-50"
+                      >
+                        {verifying ? <Loader2 className="h-3 w-3 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5" />}
+                        {verifying ? 'AI...' : 'AI Verify'}
+                      </button>
+                    </div>
                   </div>
                   {verification && (
                     <div className="space-y-2">
@@ -540,6 +574,9 @@ export default function AdminApplicants() {
                         {verification.idVerification.status !== 'pending' && (
                           <span className="text-xs text-slate-400">{verification.idVerification.confidence}% confidence</span>
                         )}
+                        {verification.idVerification.method === 'manual' && (
+                          <span className="text-[10px] text-slate-400">(manual)</span>
+                        )}
                       </div>
                       <div className="flex items-center gap-2 text-sm">
                         <span className="text-slate-500">Police:</span>
@@ -550,6 +587,9 @@ export default function AdminApplicants() {
                         }`}>{verification.policeClearance.status}</span>
                         {verification.policeClearance.status !== 'pending' && (
                           <span className="text-xs text-slate-400">{verification.policeClearance.confidence}% confidence</span>
+                        )}
+                        {verification.policeClearance.method === 'manual' && (
+                          <span className="text-[10px] text-slate-400">(manual)</span>
                         )}
                       </div>
                       {(verification.idVerification.issues.length > 0 || verification.policeClearance.issues.length > 0) && (
