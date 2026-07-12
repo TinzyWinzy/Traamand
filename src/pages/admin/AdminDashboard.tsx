@@ -68,8 +68,8 @@ export default function AdminDashboard() {
         pendingPayoutAmount: payoutsSnap.docs.reduce((s, d) => s + (d.data().amount || 0), 0),
         pendingSubmissions: subSnap.size,
         openVerifierTasks: verifierSnap.size,
-        referralEarnings: txSnap.docs.reduce((s, d) => s + (d.data().amount || 0), 0).toFixed(2),
-      } as any)
+        referralEarnings: Math.round(txSnap.docs.reduce((s, d) => s + (d.data().amount || 0), 0) * 100) / 100,
+      })
 
       const recentQuery = query(collection(db, 'bookings'), orderBy('createdAt', 'desc'), limit(5))
       const recentSnap = await getDocs(recentQuery)
