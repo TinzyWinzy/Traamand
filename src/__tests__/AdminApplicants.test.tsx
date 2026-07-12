@@ -93,6 +93,7 @@ const makeApplicant = (overrides: Partial<Applicant> = {}): Applicant => ({
   interviewNotes: '',
   convertedWorkerId: '',
   source: 'join_team_form',
+  userId: '',
   createdAt: { seconds: 0, nanoseconds: 0 } as Timestamp,
   updatedAt: { seconds: 0, nanoseconds: 0 } as Timestamp,
   ...overrides,

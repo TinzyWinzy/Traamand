@@ -60,6 +60,7 @@ describe('Applicant Firestore Functions', () => {
         interviewNotes: '',
         convertedWorkerId: '',
         source: 'join_team_form',
+        userId: '',
       }
 
       const id = await createApplicant(data)

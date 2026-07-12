@@ -12,7 +12,8 @@ import { generateWhatsAppUrl } from '../../../lib/whatsapp'
 import { generateWorkerSlug } from '../../../lib/worker'
 import { useToastStore } from '../../../stores/toastStore'
 import { verifyNationalId, parseResume, verifyPoliceClearance, computeOverallVerification, makeVerification } from '../../../lib/verification'
-import { createVerifierTask, getUserByReferralCode, getUserData, createTransaction } from '../../../firebase/firestore'
+import { createVerifierTask, getUserByReferralCode, createTransaction } from '../../../firebase/firestore'
+import { getUserData } from '../../../firebase/auth'
 import type { Applicant, ApplicantStatus, DocumentVerification, ApplicantVerification } from '../../../types'
 
 const PIPELINE_STAGES: { status: ApplicantStatus; label: string; color: string }[] = [

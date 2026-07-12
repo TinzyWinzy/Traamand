@@ -2,6 +2,7 @@ export interface CommissionRule {
   event: string
   amount: number
   description: string
+  rate?: number
 }
 
 export const COMMISSION_RULES: Record<string, CommissionRule> = {

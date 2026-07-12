@@ -11,42 +11,6 @@ import type { User, UserRole } from '../types'
 import { generateReferralCode } from '../lib/referral'
 import { getInviteByEmail, markInviteAccepted } from './firestore'
 
-let recaptchaVerifier: RecaptchaVerifier | null = null
-let confirmationResult: ConfirmationResult | null = null
-
-export function initRecaptcha(containerId: string) {
-  recaptchaVerifier = new RecaptchaVerifier(auth, containerId, {
-    size: 'invisible',
-    callback: () => {},
-    'expired-callback': () => {
-      recaptchaVerifier = null
-    },
-  })
-  return recaptchaVerifier
-}
-
-export function clearRecaptcha() {
-  if (recaptchaVerifier) {
-    recaptchaVerifier.clear()
-    recaptchaVerifier = null
-  }
-}
-
-export async function sendOTP(phoneNumber: string): Promise<void> {
-  if (!recaptchaVerifier) {
-    throw new Error('reCAPTCHA not initialized')
-  }
-  confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, recaptchaVerifier)
-}
-
-export async function verifyOTP(code: string): Promise<FirebaseUser | null> {
-  if (!confirmationResult) {
-    throw new Error('No OTP sent. Call sendOTP first.')
-  }
-  const result = await confirmationResult.confirm(code)
-  return result.user ?? null
-}
-
 const googleProvider = new GoogleAuthProvider()
 
 export async function signInWithGoogle(): Promise<FirebaseUser> {
@@ -78,7 +42,6 @@ export async function createOrUpdateUser(
 
   const referredBy = typeof window !== 'undefined' ? sessionStorage.getItem('traamand_ref') || '' : ''
 
-  // Check if user was invited by admin
   const invite = await getInviteByEmail(firebaseUser.email || data.email || '')
 
   const newUser = {
@@ -119,8 +82,6 @@ export async function getUserData(uid: string): Promise<User | null> {
 }
 
 export async function logout(): Promise<void> {
-  clearRecaptcha()
-  confirmationResult = null
   await signOut(auth)
 }
 
