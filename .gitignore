@@ -32,3 +32,8 @@ scripts/seed/serviceAccount.json
 # Test files
 test.jpg
 test2.jpg
+
+# Playwright
+test-results/
+playwright-report/
+playwright/.cache/
