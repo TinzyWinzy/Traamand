@@ -23,6 +23,7 @@ import { db } from '../../../firebase/config'
 import { useAuthStore } from '../../../stores/authStore'
 import { useToastStore } from '../../../stores/toastStore'
 import { generateWorkerSlug } from '../../../lib/worker'
+import WorkerImportCSV from '../../../components/admin/WorkerImportCSV'
 import type { Worker, Booking } from '../../../types'
 
 function formatDate(ts: any) {
@@ -199,6 +200,11 @@ export default function AdminWorkers() {
               <Plus className="h-5 w-5" /> Add Worker
             </Link>
           </div>
+        </div>
+
+        {/* Bulk Import */}
+        <div className="mb-4">
+          <WorkerImportCSV onSuccess={fetchData} />
         </div>
 
         <div className="mb-4">
