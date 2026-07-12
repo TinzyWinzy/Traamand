@@ -1,5 +1,7 @@
 import {
   signInWithPhoneNumber,
+  signInWithPopup,
+  GoogleAuthProvider,
   RecaptchaVerifier,
   type ConfirmationResult,
   type User as FirebaseUser,
@@ -46,21 +48,30 @@ export async function verifyOTP(code: string): Promise<FirebaseUser | null> {
   return result.user ?? null
 }
 
+const googleProvider = new GoogleAuthProvider()
+
+export async function signInWithGoogle(): Promise<FirebaseUser> {
+  const result = await signInWithPopup(auth, googleProvider)
+  return result.user
+}
+
 export async function createOrUpdateUser(
   firebaseUser: FirebaseUser,
-  data: { name: string; phone: string; email?: string; role?: UserRole }
+  data: { name: string; phone?: string; email?: string; role?: UserRole }
 ): Promise<User> {
   const userRef = doc(db, 'users', firebaseUser.uid)
   const userSnap = await getDoc(userRef)
 
-  const whatsappNumber = data.phone.startsWith('+') ? data.phone : `+263${data.phone.replace(/^0/, '')}`
+  const whatsappNumber = data.phone
+    ? (data.phone.startsWith('+') ? data.phone : `+263${data.phone.replace(/^0/, '')}`)
+    : ''
 
   if (userSnap.exists()) {
     const existing = userSnap.data()
     await setDoc(userRef, {
       name: data.name || existing.name,
       email: data.email || existing.email || firebaseUser.email || '',
-      whatsappNumber: whatsappNumber || existing.whatsappNumber,
+      whatsappNumber: whatsappNumber || existing.whatsappNumber || '',
       updatedAt: serverTimestamp(),
     }, { merge: true })
     return { id: firebaseUser.uid, ...existing } as unknown as User
@@ -68,7 +79,7 @@ export async function createOrUpdateUser(
 
   const newUser = {
     name: data.name,
-    phone: data.phone,
+    phone: data.phone || '',
     email: data.email || firebaseUser.email || '',
     whatsappNumber,
     addresses: [],
