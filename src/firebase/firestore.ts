@@ -37,10 +37,10 @@ export async function getWorkers(constraints: QueryConstraint[] = []): Promise<W
 }
 
 export async function getAvailableWorkers(): Promise<Worker[]> {
-  return getWorkers([
-    where('availability.status', '==', 'available'),
-    limit(100),
-  ])
+  const snap = await getDocs(workersCol())
+  return snap.docs
+    .map((d) => ({ id: d.id, ...d.data() }) as Worker)
+    .filter((w) => w.isActive && w.availability?.status === 'available')
 }
 
 export async function getWorkersByCategory(category: string): Promise<Worker[]> {
