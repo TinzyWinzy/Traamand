@@ -3,57 +3,101 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    match /workers/{workerId} {
-      allow read: if true;
-      allow create: if request.auth != null;
-      allow update, delete: if request.auth != null
+    function isAdmin() {
+      return request.auth != null
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    function isAdminOrVerifier() {
+      return request.auth != null
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'verifier'];
     }
 
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    match /workers/{workerId} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update, delete: if isAdminOrVerifier();
+    }
+
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-      allow read: if request.auth != null
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'verifier'];
+      allow read: if isOwner(userId) || isAdminOrVerifier();
+      allow write: if isOwner(userId) || isAdmin();
     }
 
     match /categories/{categoryId} {
       allow read: if true;
-      allow create, update, delete: if request.auth != null
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      allow create, update, delete: if isAdmin();
     }
 
     match /bookings/{bookingId} {
       allow read: if request.auth != null
-        && (resource.data.clientId == request.auth.uid
-          || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'verifier']);
+        && (resource.data.clientId == request.auth.uid || isAdminOrVerifier());
       allow create: if request.auth != null;
       allow update: if request.auth != null
-        && (resource.data.clientId == request.auth.uid
-          || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'verifier']);
-      allow delete: if request.auth != null
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+        && (resource.data.clientId == request.auth.uid || isAdminOrVerifier());
+      allow delete: if isAdmin();
     }
 
     match /applicants/{applicantId} {
       allow create: if true;
-      allow read, update: if request.auth != null
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'verifier'];
-      allow delete: if request.auth != null
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      allow read, update: if isAdminOrVerifier();
+      allow delete: if isAdmin();
 
       match /verifications/{verificationId} {
         allow read: if request.auth != null
-          && (request.auth.uid == applicantId
-            || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'verifier']);
-        allow create, update: if request.auth != null
-          && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'verifier'];
+          && (request.auth.uid == applicantId || isAdminOrVerifier());
+        allow create, update: if isAdminOrVerifier();
       }
     }
 
     match /locationPages/{pageId} {
       allow read: if true;
-      allow create, update, delete: if request.auth != null
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /transactions/{txnId} {
+      allow read: if isOwner(resource.data.userId) || isAdminOrVerifier();
+      allow create: if request.auth != null;
+      allow update, delete: if isAdmin();
+    }
+
+    match /payouts/{payoutId} {
+      allow read: if isOwner(resource.data.userId) || isAdmin();
+      allow create: if request.auth != null;
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /verifierTasks/{taskId} {
+      allow read: if isAdminOrVerifier();
+      allow create: if isAdmin();
+      allow update: if isAdminOrVerifier();
+      allow delete: if isAdmin();
+    }
+
+    match /creatorSubmissions/{subId} {
+      allow read: if isOwner(resource.data.userId) || isAdminOrVerifier();
+      allow create: if request.auth != null;
+      allow update: if isAdminOrVerifier();
+      allow delete: if isAdmin();
+    }
+
+    match /sponsorships/{sponsorId} {
+      allow read: if isOwner(resource.data.userId) || isAdmin();
+      allow create: if request.auth != null;
+      allow update: if isOwner(resource.data.userId) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /adCampaigns/{campaignId} {
+      allow read: if isOwner(resource.data.userId) || isAdmin();
+      allow create: if request.auth != null;
+      allow update: if isOwner(resource.data.userId) || isAdmin();
+      allow delete: if isAdmin();
     }
   }
 }
