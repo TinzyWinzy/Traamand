@@ -36,28 +36,32 @@ export default function WorkerList() {
 
   useEffect(() => {
     setLoading(true)
-    getAvailableWorkers().then((all) => {
-      if (category) {
-        const skillMap: Record<string, string[]> = {
-          Maids: ['cleaning', 'maid', 'housekeeping', 'laundry'],
-          Nannies: ['newborn', 'infant', 'childcare', 'nanny', 'toddler'],
-          Chefs: ['cooking', 'baking', 'chef', 'meal'],
-          Gardeners: ['gardening', 'lawn', 'landscaping', 'garden'],
-          'Nurse Aides': ['elderly', 'nurse', 'patient', 'medication'],
-          Drivers: ['driving', 'driver', 'chauffeur', 'route'],
-          'Sales Ladies': ['sales', 'retail', 'customer-service'],
-          'Bar Ladies': ['bartending', 'mixology', 'bar'],
+    getAvailableWorkers()
+      .then((all) => {
+        if (category) {
+          const skillMap: Record<string, string[]> = {
+            Maids: ['cleaning', 'maid', 'housekeeping', 'laundry'],
+            Nannies: ['newborn', 'infant', 'childcare', 'nanny', 'toddler'],
+            Chefs: ['cooking', 'baking', 'chef', 'meal'],
+            Gardeners: ['gardening', 'lawn', 'landscaping', 'garden'],
+            'Nurse Aides': ['elderly', 'nurse', 'patient', 'medication'],
+            Drivers: ['driving', 'driver', 'chauffeur', 'route'],
+            'Sales Ladies': ['sales', 'retail', 'customer-service'],
+            'Bar Ladies': ['bartending', 'mixology', 'bar'],
+          }
+          const keywords = skillMap[category.name] || [category.name.toLowerCase()]
+          const filtered = all.filter((w) =>
+            w.skills.some((s) => keywords.some((k) => s.includes(k)))
+          )
+          setWorkers(filtered)
+        } else {
+          setWorkers(all)
         }
-        const keywords = skillMap[category.name] || [category.name.toLowerCase()]
-        const filtered = all.filter((w) =>
-          w.skills.some((s) => keywords.some((k) => s.includes(k)))
-        )
-        setWorkers(filtered)
-      } else {
-        setWorkers(all)
-      }
-      setLoading(false)
-    })
+        setLoading(false)
+      })
+      .catch(() => {
+        setLoading(false)
+      })
   }, [categorySlug])
 
   const filtered = useMemo(() => {

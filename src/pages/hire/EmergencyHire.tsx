@@ -112,19 +112,21 @@ export default function HomePage() {
   const [recentlyHired, setRecentlyHired] = useState<Worker | null>(null)
 
   useEffect(() => {
-    getAvailableWorkers().then((workers) => {
-      const counts: Record<string, number> = {}
-      CATEGORIES.forEach((cat) => {
-        counts[cat.name] = getCategoryWorkerCount(cat, workers)
-      })
-      setWorkerCounts(counts)
-      setTotalAvailable(workers.length)
+    getAvailableWorkers()
+      .then((workers) => {
+        const counts: Record<string, number> = {}
+        CATEGORIES.forEach((cat) => {
+          counts[cat.name] = getCategoryWorkerCount(cat, workers)
+        })
+        setWorkerCounts(counts)
+        setTotalAvailable(workers.length)
 
-      const topWorker = workers
-        .filter((w) => w.hireCount > 10)
-        .sort((a, b) => b.rating - a.rating)[0]
-      if (topWorker) setRecentlyHired(topWorker)
-    })
+        const topWorker = workers
+          .filter((w) => w.hireCount > 10)
+          .sort((a, b) => b.rating - a.rating)[0]
+        if (topWorker) setRecentlyHired(topWorker)
+      })
+      .catch(() => {})
   }, [])
 
   return (
