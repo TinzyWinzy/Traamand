@@ -68,17 +68,17 @@ export default function AdminWorkers() {
   const seedWorkers = async () => {
     if (!confirm('Seed 11 sample workers across all categories? They will appear on the landing page immediately.')) return
     const seedData = [
-      { firstName: 'Maria', lastName: 'Dube', category: 'Maids', skills: ['cleaning', 'maid', 'housekeeping'], placementFee: 50 },
-      { firstName: 'Chipo', lastName: 'Moyo', category: 'Maids', skills: ['cleaning', 'laundry', 'maid'], placementFee: 45 },
-      { firstName: 'Linda', lastName: 'Ndlovu', category: 'Nannies', skills: ['newborn', 'childcare', 'nanny'], placementFee: 55 },
-      { firstName: 'Ruth', lastName: 'Sibanda', category: 'Nannies', skills: ['infant', 'toddler', 'nanny'], placementFee: 60 },
-      { firstName: 'Tafadzwa', lastName: 'Chikwanha', category: 'Chefs', skills: ['cooking', 'chef', 'meal', 'baking'], placementFee: 70 },
-      { firstName: 'Nyasha', lastName: 'Mukandi', category: 'Chefs', skills: ['cooking', 'chef', 'meal'], placementFee: 65 },
-      { firstName: 'Farai', lastName: 'Gumbo', category: 'Gardeners', skills: ['gardening', 'lawn', 'landscaping'], placementFee: 40 },
-      { firstName: 'Tendai', lastName: 'Makoni', category: 'Nurse Aides', skills: ['elderly', 'nurse', 'patient'], placementFee: 60 },
-      { firstName: 'Simba', lastName: 'Mvenge', category: 'Drivers', skills: ['driving', 'driver', 'chauffeur'], placementFee: 50 },
-      { firstName: 'Priscilla', lastName: 'Mashava', category: 'Sales Ladies', skills: ['sales', 'retail', 'customer-service'], placementFee: 45 },
-      { firstName: 'Nancy', lastName: 'Chigumba', category: 'Bar Ladies', skills: ['bartending', 'mixology', 'bar'], placementFee: 45 },
+      { firstName: 'Maria', lastName: 'Dube', category: 'Maid', skills: ['cleaning', 'maid', 'housekeeping'], placementFee: 50 },
+      { firstName: 'Chipo', lastName: 'Moyo', category: 'Maid', skills: ['cleaning', 'laundry', 'maid'], placementFee: 45 },
+      { firstName: 'Linda', lastName: 'Ndlovu', category: 'Nanny', skills: ['newborn', 'childcare', 'nanny'], placementFee: 55 },
+      { firstName: 'Ruth', lastName: 'Sibanda', category: 'Nanny', skills: ['infant', 'toddler', 'nanny'], placementFee: 60 },
+      { firstName: 'Tafadzwa', lastName: 'Chikwanha', category: 'Chef', skills: ['cooking', 'chef', 'meal', 'baking'], placementFee: 70 },
+      { firstName: 'Nyasha', lastName: 'Mukandi', category: 'Chef', skills: ['cooking', 'chef', 'meal'], placementFee: 65 },
+      { firstName: 'Farai', lastName: 'Gumbo', category: 'Gardener', skills: ['gardening', 'lawn', 'landscaping'], placementFee: 40 },
+      { firstName: 'Tendai', lastName: 'Makoni', category: 'Nurse Aide', skills: ['elderly', 'nurse', 'patient'], placementFee: 60 },
+      { firstName: 'Simba', lastName: 'Mvenge', category: 'Driver', skills: ['driving', 'driver', 'chauffeur'], placementFee: 50 },
+      { firstName: 'Priscilla', lastName: 'Mashava', category: 'Sales Lady', skills: ['sales', 'retail', 'customer-service'], placementFee: 45 },
+      { firstName: 'Nancy', lastName: 'Chigumba', category: 'Bar Lady', skills: ['bartending', 'mixology', 'bar'], placementFee: 45 },
     ]
     let count = 0
     for (const s of seedData) {
@@ -100,7 +100,7 @@ export default function AdminWorkers() {
             verifiedBy: 'system',
           },
           photos: [],
-          bio: `${s.firstName} is a reliable and experienced ${s.category.toLowerCase().replace(/s$/, '')} with over 5 years of experience in Harare.`,
+          bio: `${s.firstName} is a reliable and experienced ${s.category.toLowerCase()} with over 5 years of experience in Harare.`,
           languages: ['English', 'Shona'],
           skills: s.skills,
           experienceYears: 5,

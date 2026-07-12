@@ -42,14 +42,14 @@ const ICON_MAP: Record<string, React.FC<{ className?: string }>> = {
 
 function getCategoryWorkerCount(cat: CategoryMeta, workers: Worker[]): number {
   const skillMap: Record<string, string[]> = {
-    Maids: ['cleaning', 'maid', 'housekeeping', 'laundry'],
-    Nannies: ['newborn', 'infant', 'childcare', 'nanny', 'toddler'],
-    Chefs: ['cooking', 'baking', 'chef', 'meal'],
-    Gardeners: ['gardening', 'lawn', 'landscaping', 'garden'],
-    'Nurse Aides': ['elderly', 'nurse', 'patient', 'medication'],
-    Drivers: ['driving', 'driver', 'chauffeur', 'route'],
-    'Sales Ladies': ['sales', 'retail', 'customer-service'],
-    'Bar Ladies': ['bartending', 'mixology', 'bar'],
+    Maid: ['cleaning', 'maid', 'housekeeping', 'laundry'],
+    Nanny: ['newborn', 'infant', 'childcare', 'nanny', 'toddler'],
+    Chef: ['cooking', 'baking', 'chef', 'meal'],
+    Gardener: ['gardening', 'lawn', 'landscaping', 'garden'],
+    'Nurse Aide': ['elderly', 'nurse', 'patient', 'medication'],
+    Driver: ['driving', 'driver', 'chauffeur', 'route'],
+    'Sales Lady': ['sales', 'retail', 'customer-service'],
+    'Bar Lady': ['bartending', 'mixology', 'bar'],
   }
   const keywords = skillMap[cat.name] || [cat.name.toLowerCase()]
   return workers.filter((w) =>
