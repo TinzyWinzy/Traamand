@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Calendar, Shield, Loader2, User } from 'lucide-react'
 import { getClientBookings } from '../../firebase/firestore'
 import { useAuthStore } from '../../stores/authStore'
+import { useToastStore } from '../../stores/toastStore'
 import type { Booking } from '../../types'
 
 const STATUS_LABELS: Record<string, string> = {
@@ -29,6 +30,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function MyHires() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuthStore()
+  const addToast = useToastStore((s) => s.addToast)
   const [bookings, setBookings] = useState<Booking[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -36,6 +38,9 @@ export default function MyHires() {
     if (user) {
       getClientBookings(user.id).then((b) => {
         setBookings(b)
+        setLoading(false)
+      }).catch(() => {
+        addToast('Failed to load bookings', 'error')
         setLoading(false)
       })
     } else if (!authLoading) {

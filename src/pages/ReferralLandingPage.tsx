@@ -17,6 +17,8 @@ export default function ReferralLandingPage() {
         sessionStorage.setItem('traamand_ref', code.toUpperCase())
       }
       setLoading(false)
+    }).catch(() => {
+      setLoading(false)
     })
   }, [code])
 

@@ -48,6 +48,9 @@ export default function VerifierTasks() {
       setMyTasks(mine)
       setBalance(txns.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0))
       setLoading(false)
+    }).catch(() => {
+      addToast('Failed to load verifier tasks', 'error')
+      setLoading(false)
     })
   }, [user?.id])
 

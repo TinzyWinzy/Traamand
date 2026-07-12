@@ -55,6 +55,9 @@ export default function MyApplication() {
     getApplicantsByUserId(user.id).then((results) => {
       setApplicants(results)
       setLoading(false)
+    }).catch(() => {
+      addToast('Failed to load applications', 'error')
+      setLoading(false)
     })
   }, [user?.id])
 

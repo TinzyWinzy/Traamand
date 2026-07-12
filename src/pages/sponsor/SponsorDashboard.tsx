@@ -38,6 +38,9 @@ export default function SponsorDashboard() {
         setSponsorships(s)
         setWorkers(wSnap.docs.map((d) => ({ id: d.id, ...d.data() })) as Worker[])
         setLoading(false)
+      }).catch(() => {
+        addToast('Failed to load sponsor data', 'error')
+        setLoading(false)
       })
     }
   }, [authLoading, user?.id])

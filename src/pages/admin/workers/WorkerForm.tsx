@@ -26,7 +26,7 @@ const WORK_TYPES = ['live-in', 'daily', 'part-time', 'temporary']
 
 export default function WorkerForm() {
   const { id } = useParams<{ id: string }>()
-  const isEdit = id !== 'new'
+  const isEdit = !!id
   const navigate = useNavigate()
   const { user, isAuthenticated, isLoading: authLoading } = useAuthStore()
 

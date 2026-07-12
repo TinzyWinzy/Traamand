@@ -1,9 +1,9 @@
 import { useState, useRef } from 'react'
 import { Upload, FileJson, AlertCircle, CheckCircle2, X, Loader2, Download, RefreshCw } from 'lucide-react'
 import { collection, writeBatch, doc, serverTimestamp } from 'firebase/firestore'
-import { db } from '../../../firebase/config'
-import { useToastStore } from '../../../stores/toastStore'
-import type { Worker } from '../../../types'
+import { db } from '../../firebase/config'
+import { useToastStore } from '../../stores/toastStore'
+import type { Worker, WorkType } from '../../types'
 
 interface ImportError {
   row: number
@@ -176,7 +176,6 @@ export default function WorkerImportCSV({ onSuccess }: Props) {
           lastName: data.lastName,
           displayName: `${data.firstName} ${data.lastName.charAt(0)}.`,
           slug: `${data.firstName.toLowerCase()}-${data.lastName.toLowerCase()}-${data.category.toLowerCase()}`,
-          phone: data.phone,
           category: data.category,
           verificationStatus: 'pending',
           divineSeal: {
@@ -198,7 +197,7 @@ export default function WorkerImportCSV({ onSuccess }: Props) {
             status: (data.status || 'available') as 'available' | 'booked' | 'off',
             nextAvailable: null,
             preferredLocations: data.preferredLocations?.split(',').map(l => l.trim()) || [],
-            workType: [data.workType || 'daily'],
+            workType: [data.workType || 'daily'] as WorkType[],
           },
           rating: 0,
           reviewCount: 0,
@@ -214,8 +213,8 @@ export default function WorkerImportCSV({ onSuccess }: Props) {
           metaDescription: `${data.firstName} is an experienced ${data.category.toLowerCase()} with ${data.yearsOfExperience} years of experience in Harare. Verified and ready to work.`,
           serviceAreas: data.preferredLocations?.split(',').map(l => l.trim()) || [],
           isActive: true,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
+          createdAt: serverTimestamp() as any,
+          updatedAt: serverTimestamp() as any,
         }
 
         batch.set(doc(db, 'workers', workerId), worker)

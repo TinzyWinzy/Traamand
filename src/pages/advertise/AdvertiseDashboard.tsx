@@ -32,6 +32,9 @@ export default function AdvertiseDashboard() {
       getAdCampaigns(user.id).then((c) => {
         setCampaigns(c)
         setLoading(false)
+      }).catch(() => {
+        addToast('Failed to load campaigns', 'error')
+        setLoading(false)
       })
     }
   }, [authLoading, user?.id])

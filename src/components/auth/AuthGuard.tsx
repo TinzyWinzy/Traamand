@@ -35,7 +35,11 @@ export function AuthListener() {
     const unsubscribe = onAuthChange(async (fbUser: FirebaseUser | null) => {
       if (fbUser) {
         setFirebaseUser(fbUser)
-        const userData = await getUserData(fbUser.uid)
+        let userData = await getUserData(fbUser.uid)
+        if (!userData) {
+          await new Promise((r) => setTimeout(r, 400))
+          userData = await getUserData(fbUser.uid)
+        }
         if (userData) {
           setUser(userData)
         } else {

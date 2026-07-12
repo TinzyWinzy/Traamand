@@ -46,6 +46,9 @@ export default function CreatorDashboard() {
         setSubmissions(subs)
         setTransactions(txns)
         setLoading(false)
+      }).catch(() => {
+        addToast('Failed to load creator data', 'error')
+        setLoading(false)
       })
     }
   }, [authLoading, user?.id])
