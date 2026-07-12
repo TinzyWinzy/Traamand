@@ -9,11 +9,13 @@ import {
   limit,
   addDoc,
   setDoc,
+  updateDoc,
+  deleteDoc,
   serverTimestamp,
   type QueryConstraint,
 } from 'firebase/firestore'
 import { db } from './config'
-import type { Worker, Booking, User, UserRole, Category, LocationPage, Applicant, Transaction, Payout, PayoutMethod, TransactionType, VerifierTask, CreatorSubmission, Sponsorship, AdCampaign } from '../types'
+import type { Worker, Booking, User, UserRole, Category, LocationPage, Applicant, Transaction, Payout, PayoutMethod, TransactionType, VerifierTask, CreatorSubmission, Sponsorship, AdCampaign, Invite } from '../types'
 
 const workersCol = () => collection(db, 'workers')
 const bookingsCol = () => collection(db, 'bookings')
@@ -456,4 +458,41 @@ export async function getAdCampaigns(userId: string): Promise<AdCampaign[]> {
   const q = query(adCampaignsCol(), where('userId', '==', userId), orderBy('createdAt', 'desc'))
   const snap = await getDocs(q)
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as AdCampaign)
+}
+
+// ── Invites ──
+
+const invitesCol = () => collection(db, 'invites')
+
+export async function createInvite(email: string, role: UserRole, invitedBy: string): Promise<string> {
+  const docRef = await addDoc(invitesCol(), {
+    email: email.toLowerCase().trim(),
+    role,
+    invitedBy,
+    accepted: false,
+    createdAt: serverTimestamp(),
+  })
+  return docRef.id
+}
+
+export async function getInviteByEmail(email: string): Promise<Invite | null> {
+  const q = query(invitesCol(), where('email', '==', email.toLowerCase().trim()), where('accepted', '==', false))
+  const snap = await getDocs(q)
+  if (snap.empty) return null
+  const d = snap.docs[0]
+  return { id: d.id, ...d.data() } as Invite
+}
+
+export async function getInvites(): Promise<Invite[]> {
+  const q = query(invitesCol(), orderBy('createdAt', 'desc'))
+  const snap = await getDocs(q)
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Invite)
+}
+
+export async function deleteInvite(inviteId: string): Promise<void> {
+  await deleteDoc(doc(db, 'invites', inviteId))
+}
+
+export async function markInviteAccepted(inviteId: string): Promise<void> {
+  await updateDoc(doc(db, 'invites', inviteId), { accepted: true })
 }

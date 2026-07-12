@@ -362,6 +362,16 @@ export interface AdCampaign {
   updatedAt: Timestamp
 }
 
+export interface Invite {
+  id: string
+  email: string
+  name: string
+  role: UserRole
+  invitedBy: string
+  accepted: boolean
+  createdAt: Timestamp
+}
+
 export interface ApplicantVerification {
   idVerification: DocumentVerification
   resumeParsing: DocumentVerification

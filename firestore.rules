@@ -99,5 +99,12 @@ service cloud.firestore {
       allow update: if isOwner(resource.data.userId) || isAdmin();
       allow delete: if isAdmin();
     }
+
+    match /invites/{inviteId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin();
+      allow delete: if isAdmin();
+      allow update: if isAdmin();
+    }
   }
 }

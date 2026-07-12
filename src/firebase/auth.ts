@@ -1,9 +1,6 @@
 import {
-  signInWithPhoneNumber,
   signInWithPopup,
   GoogleAuthProvider,
-  RecaptchaVerifier,
-  type ConfirmationResult,
   type User as FirebaseUser,
   signOut,
   onAuthStateChanged,
@@ -12,6 +9,7 @@ import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore'
 import { auth, db } from './config'
 import type { User, UserRole } from '../types'
 import { generateReferralCode } from '../lib/referral'
+import { getInviteByEmail, markInviteAccepted } from './firestore'
 
 let recaptchaVerifier: RecaptchaVerifier | null = null
 let confirmationResult: ConfirmationResult | null = null
@@ -80,6 +78,9 @@ export async function createOrUpdateUser(
 
   const referredBy = typeof window !== 'undefined' ? sessionStorage.getItem('traamand_ref') || '' : ''
 
+  // Check if user was invited by admin
+  const invite = await getInviteByEmail(firebaseUser.email || data.email || '')
+
   const newUser = {
     name: data.name,
     phone: data.phone || '',
@@ -88,7 +89,7 @@ export async function createOrUpdateUser(
     addresses: [],
     bookings: [],
     favoriteWorkers: [],
-    role: data.role || 'client',
+    role: invite ? invite.role : (data.role || 'client'),
     referralCode: generateReferralCode(),
     referredBy,
     earningsBalance: 0,
@@ -98,6 +99,10 @@ export async function createOrUpdateUser(
   }
 
   await setDoc(userRef, newUser)
+
+  if (invite) {
+    await markInviteAccepted(invite.id)
+  }
 
   if (referredBy && typeof window !== 'undefined') {
     sessionStorage.removeItem('traamand_ref')

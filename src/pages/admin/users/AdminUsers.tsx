@@ -8,30 +8,43 @@ import {
   ArrowLeft,
   CheckCircle,
   XCircle,
+  UserPlus,
+  Send,
+  Trash2,
+  Clock,
 } from 'lucide-react'
 import { collection, getDocs, query, orderBy, limit, doc, updateDoc } from 'firebase/firestore'
 import { db } from '../../../firebase/config'
 import { useAuthStore } from '../../../stores/authStore'
 import { useToastStore } from '../../../stores/toastStore'
-import type { User as UserType, UserRole } from '../../../types'
+import { createInvite, getInvites, deleteInvite } from '../../../firebase/firestore'
+import type { User as UserType, UserRole, Invite } from '../../../types'
 
 export default function AdminUsers() {
   const { user: currentUser, isAuthenticated, isLoading: authLoading } = useAuthStore()
   const addToast = useToastStore((s) => s.addToast)
   const [users, setUsers] = useState<UserType[]>([])
+  const [invites, setInvites] = useState<Invite[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [inviteEmail, setInviteEmail] = useState('')
+  const [inviteRole, setInviteRole] = useState<UserRole>('client')
+  const [inviting, setInviting] = useState(false)
 
   useEffect(() => {
     if (!authLoading && (!isAuthenticated || currentUser?.role !== 'admin')) return
-    if (!authLoading && isAuthenticated) fetchUsers()
+    if (!authLoading && isAuthenticated) fetchData()
   }, [authLoading, isAuthenticated])
 
-  const fetchUsers = async () => {
+  const fetchData = async () => {
     setLoading(true)
     try {
-      const snap = await getDocs(query(collection(db, 'users'), orderBy('createdAt', 'desc'), limit(100)))
-      setUsers(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as UserType))
+      const [usersSnap, invitesData] = await Promise.all([
+        getDocs(query(collection(db, 'users'), orderBy('createdAt', 'desc'), limit(100))),
+        getInvites(),
+      ])
+      setUsers(usersSnap.docs.map((d) => ({ id: d.id, ...d.data() }) as UserType))
+      setInvites(invitesData)
     } catch {
       addToast('Failed to load users', 'error')
     }
@@ -46,6 +59,29 @@ export default function AdminUsers() {
     } catch {
       addToast('Failed to update role', 'error')
     }
+  }
+
+  const handleInvite = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!inviteEmail.trim()) return
+    setInviting(true)
+    try {
+      await createInvite(inviteEmail.trim(), inviteRole, currentUser?.id || '')
+      addToast(`Invite sent to ${inviteEmail.trim()}`, 'success')
+      setInviteEmail('')
+      setInviteRole('client')
+      const invitesData = await getInvites()
+      setInvites(invitesData)
+    } catch {
+      addToast('Failed to create invite', 'error')
+    }
+    setInviting(false)
+  }
+
+  const handleDeleteInvite = async (inviteId: string) => {
+    await deleteInvite(inviteId)
+    setInvites((prev) => prev.filter((i) => i.id !== inviteId))
+    addToast('Invite removed', 'success')
   }
 
   const filtered = users.filter(
@@ -73,10 +109,86 @@ export default function AdminUsers() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-extrabold text-slate-900">User Management</h1>
-              <p className="text-sm text-slate-500">{users.length} users total</p>
+              <p className="text-sm text-slate-500">{users.length} users · {invites.length} pending invites</p>
             </div>
           </div>
         </div>
+
+        <div className="mb-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-slate-900">
+            <UserPlus className="h-5 w-5 text-teal-600" /> Invite User
+          </h2>
+          <form onSubmit={handleInvite} className="flex flex-col gap-4 sm:flex-row sm:items-end">
+            <div className="flex-1">
+              <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500">Email address</label>
+              <input
+                type="email"
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+                placeholder="user@example.com"
+                required
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
+              />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500">Role</label>
+              <select
+                value={inviteRole}
+                onChange={(e) => setInviteRole(e.target.value as UserRole)}
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
+              >
+                <option value="client">Client</option>
+                <option value="verifier">Verifier</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+            <button
+              type="submit"
+              disabled={inviting || !inviteEmail.trim()}
+              className="inline-flex items-center gap-2 rounded-xl bg-teal-600 px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-teal-700 disabled:opacity-50"
+            >
+              <Send className="h-4 w-4" /> {inviting ? 'Inviting...' : 'Invite'}
+            </button>
+          </form>
+          <p className="mt-2 text-xs text-slate-400">
+            User will be assigned the selected role when they sign in with Google for the first time.
+          </p>
+        </div>
+
+        {invites.length > 0 && (
+          <div className="mb-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-slate-700">
+              <Clock className="h-4 w-4 text-amber-500" /> Pending Invites
+            </h3>
+            <div className="space-y-2">
+              {invites.map((inv) => (
+                <div key={inv.id} className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3">
+                  <div className="flex items-center gap-3">
+                    <Mail className="h-4 w-4 text-slate-400" />
+                    <span className="text-sm font-medium text-slate-700">{inv.email}</span>
+                    <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                      inv.role === 'admin' ? 'bg-purple-100 text-purple-700'
+                      : inv.role === 'verifier' ? 'bg-amber-100 text-amber-700'
+                      : 'bg-slate-100 text-slate-600'
+                    }`}>
+                      {inv.role}
+                    </span>
+                    {inv.accepted && (
+                      <span className="text-xs text-emerald-600 font-semibold">Accepted</span>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => handleDeleteInvite(inv.id)}
+                    className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                    title="Remove invite"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="mb-4">
           <div className="relative">
