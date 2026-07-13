@@ -6,7 +6,8 @@ import {
   onAuthStateChanged,
 } from 'firebase/auth'
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore'
-import { auth, db } from './config'
+import { httpsCallable } from 'firebase/functions'
+import { auth, db, functions } from './config'
 import type { User, UserRole } from '../types'
 import { generateReferralCode } from '../lib/referral'
 import { getInviteByEmail, markInviteAccepted } from './firestore'
@@ -16,6 +17,15 @@ const googleProvider = new GoogleAuthProvider()
 export async function signInWithGoogle(): Promise<FirebaseUser> {
   const result = await signInWithPopup(auth, googleProvider)
   return result.user
+}
+
+async function setCustomClaimRole(uid: string, role: string) {
+  try {
+    const fn = httpsCallable(functions, 'setUserRole')
+    await fn({ uid, role })
+  } catch {
+    // best-effort: custom claim sync failure should not break sign-in
+  }
 }
 
 export async function createOrUpdateUser(
@@ -30,7 +40,15 @@ export async function createOrUpdateUser(
     : ''
 
   const referredBy = typeof window !== 'undefined' ? sessionStorage.getItem('traamand_ref') || '' : ''
-  const invite = await getInviteByEmail(firebaseUser.email || data.email || '')
+
+  let invite
+  try {
+    invite = await getInviteByEmail(firebaseUser.email || data.email || '')
+  } catch {
+    invite = null
+  }
+
+  const resolvedRole = invite?.role || data.role || 'client'
 
   if (userSnap.exists()) {
     const existing = userSnap.data() as any
@@ -40,11 +58,16 @@ export async function createOrUpdateUser(
       whatsappNumber: whatsappNumber || existing.whatsappNumber || '',
       updatedAt: serverTimestamp(),
     }
-    if (invite && invite.role) {
-      updates.role = invite.role
+    if (resolvedRole) {
+      updates.role = resolvedRole
     }
     await setDoc(userRef, updates, { merge: true })
-    return { ...existing, id: firebaseUser.uid } as User
+    const user = { ...existing, id: firebaseUser.uid } as User
+    if (resolvedRole && resolvedRole !== (existing as any).role) {
+      setCustomClaimRole(firebaseUser.uid, resolvedRole).catch(() => {})
+      await firebaseUser.getIdToken(true)
+    }
+    return user
   }
 
   const newUser = {
@@ -55,7 +78,7 @@ export async function createOrUpdateUser(
     addresses: [],
     bookings: [],
     favoriteWorkers: [],
-    role: invite ? invite.role : (data.role || 'client'),
+    role: resolvedRole,
     referralCode: generateReferralCode(),
     referredBy,
     earningsBalance: 0,
@@ -67,14 +90,18 @@ export async function createOrUpdateUser(
   await setDoc(userRef, newUser)
 
   if (invite) {
-    await markInviteAccepted(invite.id)
+    await markInviteAccepted(invite.id).catch(() => {})
   }
 
   if (referredBy && typeof window !== 'undefined') {
     sessionStorage.removeItem('traamand_ref')
   }
 
-  return { id: firebaseUser.uid, ...newUser } as unknown as User
+  const user = { id: firebaseUser.uid, ...newUser } as unknown as User
+  setCustomClaimRole(firebaseUser.uid, resolvedRole).catch(() => {})
+  await firebaseUser.getIdToken(true)
+
+  return user
 }
 
 export async function getUserData(uid: string): Promise<User | null> {

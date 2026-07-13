@@ -3,11 +3,23 @@ import { onDocumentCreated, onDocumentUpdated } from 'firebase-functions/v2/fire
 import { onCall } from 'firebase-functions/v2/https'
 import { setGlobalOptions } from 'firebase-functions/v2'
 
-export { sitemap } from './sitemap'
-export { prerender } from './prerender'
+export const setUserRole = onCall(async (request) => {
+  const uid = request.data.uid as string
+  const role = request.data.role as string
+  if (!uid || !role) {
+    throw new Error('Missing uid or role')
+  }
+
+  await adminAuth.setCustomUserClaims(uid, { role })
+  await db.collection('users').doc(uid).set({ role }, { merge: true })
+
+  const user = await adminAuth.getUser(uid)
+  return { success: true, uid, role, claims: user.customClaims }
+})
 
 admin.initializeApp()
 const db = admin.firestore()
+const adminAuth = admin.auth()
 
 setGlobalOptions({ region: 'us-central1' })
 
@@ -103,7 +115,7 @@ export const generateWorkerSEO = onDocumentCreated('workers/{workerId}', async (
     displayName: worker.displayName || `${worker.firstName} ${worker.lastName.charAt(0)}.`,
     metaTitle,
     metaDescription,
-    updatedAt: FieldValue.serverTimestamp(),
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
   })
 })
 

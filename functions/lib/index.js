@@ -33,17 +33,25 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.sendReplacementAlert = exports.processPaynowPayment = exports.updateLocationStats = exports.generateWorkerSEO = exports.scheduleCheckIns = exports.sendBookingConfirmation = exports.matchWorkerToBooking = exports.prerender = exports.sitemap = void 0;
+exports.sendReplacementAlert = exports.processPaynowPayment = exports.updateLocationStats = exports.generateWorkerSEO = exports.scheduleCheckIns = exports.sendBookingConfirmation = exports.matchWorkerToBooking = exports.setUserRole = void 0;
 const admin = __importStar(require("firebase-admin"));
 const firestore_1 = require("firebase-functions/v2/firestore");
 const https_1 = require("firebase-functions/v2/https");
 const v2_1 = require("firebase-functions/v2");
-var sitemap_1 = require("./sitemap");
-Object.defineProperty(exports, "sitemap", { enumerable: true, get: function () { return sitemap_1.sitemap; } });
-var prerender_1 = require("./prerender");
-Object.defineProperty(exports, "prerender", { enumerable: true, get: function () { return prerender_1.prerender; } });
+exports.setUserRole = (0, https_1.onCall)(async (request) => {
+    const uid = request.data.uid;
+    const role = request.data.role;
+    if (!uid || !role) {
+        throw new Error('Missing uid or role');
+    }
+    await adminAuth.setCustomUserClaims(uid, { role });
+    await db.collection('users').doc(uid).set({ role }, { merge: true });
+    const user = await adminAuth.getUser(uid);
+    return { success: true, uid, role, claims: user.customClaims };
+});
 admin.initializeApp();
 const db = admin.firestore();
+const adminAuth = admin.auth();
 (0, v2_1.setGlobalOptions)({ region: 'us-central1' });
 exports.matchWorkerToBooking = (0, firestore_1.onDocumentCreated)('bookings/{bookingId}', async (event) => {
     const booking = event.data?.data();
@@ -80,9 +88,6 @@ exports.sendBookingConfirmation = (0, firestore_1.onDocumentUpdated)({ document:
         const clientSnap = await db.collection('users').doc(after.clientId).get();
         const client = clientSnap.data();
         if (client) {
-            console.log(`Sending confirmation for booking ${event.params.bookingId}`);
-            console.log(`  Client: ${client.name} (${client.phone})`);
-            console.log(`  To: ${after.workerId}`);
             await event.data?.after.ref.update({
                 notificationSent: true,
                 notificationSentAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -114,7 +119,7 @@ exports.generateWorkerSEO = (0, firestore_1.onDocumentCreated)('workers/{workerI
     const worker = event.data?.data();
     if (!worker)
         return;
-    const slug = `${worker.firstName}-${worker.lastName}-${worker.serviceAreas?.[0] || 'harare'}-${worker.skills?.[0] || 'worker'}`
+    const slug = worker.slug || `${worker.firstName}-${worker.lastName}-${worker.serviceAreas?.[0] || 'harare'}-${worker.skills?.[0] || 'worker'}`
         .toLowerCase()
         .replace(/\s+/g, '-')
         .replace(/[^a-z0-9-]/g, '');
@@ -186,24 +191,25 @@ exports.processPaynowPayment = (0, https_1.onCall)(async (request) => {
             }),
         });
         const text = await response.text();
-        const pollUrlMatch = text.match(/PollUrl=(.+)/i);
-        const browserUrlMatch = text.match(/BrowserUrl=(.+)/i);
-        const errorMatch = text.match(/Error=(.+)/i);
-        if (pollUrlMatch && browserUrlMatch) {
+        const params = new URLSearchParams(text);
+        const pollUrl = params.get('PollUrl');
+        const browserUrl = params.get('BrowserUrl');
+        if (pollUrl && browserUrl) {
             await bookingRef.update({
-                paynowPollUrl: pollUrlMatch[1].trim(),
+                paynowPollUrl: pollUrl,
                 paynowReference: reference,
                 paynowStatus: 'pending',
                 updatedAt: admin.firestore.FieldValue.serverTimestamp(),
             });
             return {
                 success: true,
-                redirectUrl: browserUrlMatch[1].trim(),
-                pollUrl: pollUrlMatch[1].trim(),
+                redirectUrl: browserUrl,
+                pollUrl,
                 reference,
             };
         }
-        return { success: false, error: errorMatch?.[1]?.trim() || 'Payment initiation failed' };
+        const error = params.get('Error');
+        return { success: false, error: error || 'Payment initiation failed' };
     }
     catch (err) {
         return { success: false, error: err.message };
@@ -215,9 +221,6 @@ exports.sendReplacementAlert = (0, firestore_1.onDocumentUpdated)({ document: 'b
     if (!after)
         return;
     if (!before?.replacementRequested && after.replacementRequested) {
-        console.log(`Replacement requested for booking ${event.params.bookingId}`);
-        console.log(`  Reason: ${after.replacementReason || 'Not specified'}`);
-        console.log(`  Client: ${after.clientId}`);
-        console.log(`  Worker: ${after.workerId}`);
+        // Replacement requested - business logic processed
     }
 });
