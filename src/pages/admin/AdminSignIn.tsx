@@ -1,4 +1,3 @@
-import { useEffect } from 'react'
 import RoleSignIn from '../../components/auth/RoleSignIn'
 
 export default function AdminSignIn() {

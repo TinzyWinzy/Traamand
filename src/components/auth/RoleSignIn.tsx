@@ -1,30 +1,23 @@
-import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Shield, Loader2, ArrowLeft } from 'lucide-react'
+import { useState } from 'react'
+import { useNavigate, Link } from 'react-router-dom'
+import { Shield, Loader2 } from 'lucide-react'
 import { signInWithGoogle, createOrUpdateUser } from '../../firebase/auth'
 import { useAuthStore } from '../../stores/authStore'
 import type { UserRole } from '../../types'
-import { COMPANY_NAME } from '../../lib/constants'
 
 interface RoleSignInProps {
   expectedRole: UserRole
   successPath: string
   title: string
   description: string
+  showBack?: boolean
 }
 
-export default function RoleSignIn({ expectedRole, successPath, title, description }: RoleSignInProps) {
+export default function RoleSignIn({ expectedRole, successPath, title, description, showBack = true }: RoleSignInProps) {
   const navigate = useNavigate()
   const { setUser, setFirebaseUser } = useAuthStore()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-
-  useEffect(() => {
-    const stored = sessionStorage.getItem('traamand_expected_role')
-    if (stored !== expectedRole) {
-      navigate('/sign-in', { replace: true })
-    }
-  }, [expectedRole, navigate])
 
   const handleGoogle = async () => {
     setError('')
@@ -38,7 +31,11 @@ export default function RoleSignIn({ expectedRole, successPath, title, descripti
       })
       setUser(user)
       setFirebaseUser(fbUser)
-      navigate(user.role === expectedRole ? successPath : '/')
+      if (user.role === expectedRole) {
+        navigate(successPath)
+      } else {
+        navigate('/')
+      }
     } catch (err: any) {
       if (err.code !== 'auth/popup-closed-by-user') {
         setError('Sign-in failed. Please try again.')
@@ -50,12 +47,11 @@ export default function RoleSignIn({ expectedRole, successPath, title, descripti
   return (
     <section className="bg-zinc-50 py-12 sm:py-20">
       <div className="mx-auto max-w-md px-4 sm:px-6">
-        <button
-          onClick={() => navigate(expectedRole === 'client' ? '/' : '/sign-in')}
-          className="mb-6 inline-flex items-center gap-1 text-sm text-teal-600 hover:underline"
-        >
-          <ArrowLeft className="h-4 w-4" /> Back
-        </button>
+        {showBack && (
+          <Link to="/" className="mb-6 inline-flex items-center gap-1 text-sm text-teal-600 hover:underline">
+            ← Back to Home
+          </Link>
+        )}
 
         <div className="rounded-2xl bg-white p-6 shadow-md sm:p-8">
           <div className="mb-6 text-center">
