@@ -49,6 +49,7 @@ export default function SignIn() {
       else if (role === 'sponsor') navigate('/sponsor')
       else if (role === 'advertise') navigate('/advertise')
       else if (role === 'applicant') navigate('/applicant')
+      else if (role === 'client') navigate('/client')
       else navigate('/')
     } catch (err: any) {
       if (err.code !== 'auth/popup-closed-by-user') {

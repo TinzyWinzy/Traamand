@@ -43,25 +43,33 @@ export function AuthListener() {
   const { setUser, setFirebaseUser, setLoading, clearAuth } = useAuthStore()
 
   useEffect(() => {
+    let cancelled = false
     const unsubscribe = onAuthChange(async (fbUser: FirebaseUser | null) => {
+      if (cancelled) return
       if (fbUser) {
         setFirebaseUser(fbUser)
         let userData = await getUserData(fbUser.uid)
-        if (!userData) {
-          await new Promise((r) => setTimeout(r, 600))
+        let retries = 5
+        while (!userData && retries > 0 && !cancelled) {
+          await new Promise((r) => setTimeout(r, 800))
+          if (cancelled) return
           userData = await getUserData(fbUser.uid)
+          retries--
         }
+        if (cancelled) return
         if (userData) {
           setUser(userData)
-        } else {
-          setUser(null)
         }
+        setLoading(false)
       } else {
         clearAuth()
+        setLoading(false)
       }
-      setLoading(false)
     })
-    return unsubscribe
+    return () => {
+      cancelled = true
+      unsubscribe()
+    }
   }, [])
 
   return null

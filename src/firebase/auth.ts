@@ -62,10 +62,15 @@ export async function createOrUpdateUser(
       updates.role = resolvedRole
     }
     await setDoc(userRef, updates, { merge: true })
-    const user = { ...existing, id: firebaseUser.uid } as User
+    const updatedSnap = await getDoc(userRef)
+    const user = { id: firebaseUser.uid, ...updatedSnap.data() } as User
     if (resolvedRole && resolvedRole !== (existing as any).role) {
       setCustomClaimRole(firebaseUser.uid, resolvedRole).catch(() => {})
-      await firebaseUser.getIdToken(true)
+      try {
+        await firebaseUser.getIdToken(true)
+      } catch {
+        // best-effort: token refresh failure should not break sign-in
+      }
     }
     return user
   }
@@ -99,7 +104,11 @@ export async function createOrUpdateUser(
 
   const user = { id: firebaseUser.uid, ...newUser } as unknown as User
   setCustomClaimRole(firebaseUser.uid, resolvedRole).catch(() => {})
-  await firebaseUser.getIdToken(true)
+  try {
+    await firebaseUser.getIdToken(true)
+  } catch {
+    // best-effort: token refresh failure should not break sign-in
+  }
 
   return user
 }

@@ -43,6 +43,7 @@ import SponsorSignIn from './pages/sponsor/SponsorSignIn'
 import AdvertiseSignIn from './pages/advertise/AdvertiseSignIn'
 import ApplicantSignIn from './pages/applicant/ApplicantSignIn'
 import ApplicantDashboard from './pages/applicant/ApplicantDashboard'
+import ClientDashboard from './pages/client/ClientDashboard'
 
 function AuthRoute({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate()
@@ -71,6 +72,15 @@ function ApplicantRoute({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate()
   return (
     <AuthGuard requireRole="applicant" navigate={navigate}>
+      {children}
+    </AuthGuard>
+  )
+}
+
+function ClientRoute({ children }: { children: React.ReactNode }) {
+  const navigate = useNavigate()
+  return (
+    <AuthGuard requireRole="client" navigate={navigate}>
       {children}
     </AuthGuard>
   )
@@ -174,6 +184,14 @@ export default function App() {
               <ApplicantRoute>
                 <ApplicantDashboard />
               </ApplicantRoute>
+            }
+          />
+          <Route
+            path="/client"
+            element={
+              <ClientRoute>
+                <ClientDashboard />
+              </ClientRoute>
             }
           />
           <Route

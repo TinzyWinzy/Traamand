@@ -17,6 +17,9 @@ export const setUserRole = onCall(async (request) => {
   return { success: true, uid, role, claims: user.customClaims }
 })
 
+export { sitemap } from './sitemap'
+export { prerender } from './prerender'
+
 admin.initializeApp()
 const db = admin.firestore()
 const adminAuth = admin.auth()

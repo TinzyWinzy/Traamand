@@ -130,6 +130,18 @@ export default function Navbar() {
                           </div>
                         </Link>
 
+                        {/* Client Dashboard */}
+                        {user.role === 'client' && (
+                          <Link
+                            to="/client"
+                            onClick={() => setDropdownOpen(false)}
+                            className="flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
+                          >
+                            <LayoutDashboard className="h-4 w-4" />
+                            Dashboard
+                          </Link>
+                        )}
+
                         {/* My Hires */}
                         <Link
                           to="/my-hires"
@@ -310,6 +322,15 @@ export default function Navbar() {
                   >
                     My Hires
                   </Link>
+                  {user.role === 'client' && (
+                    <Link
+                      to="/client"
+                      onClick={closeDrawer}
+                      className="block rounded-xl px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                    >
+                      Dashboard
+                    </Link>
+                  )}
                   {user.role === 'applicant' && (
                     <Link
                       to="/applicant"
