@@ -1,12 +1,20 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
   Search, Loader2, Calendar, ChevronDown, ChevronUp,
-  CheckCircle, XCircle, Clock, Filter,
+  CheckCircle, Clock, Filter, MessageCircle, Send,
 } from 'lucide-react'
 import { collection, getDocs, query, orderBy, limit, doc, updateDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../../../firebase/config'
 import { useToastStore } from '../../../stores/toastStore'
-import type { Booking, Worker } from '../../../types'
+import { useAuthStore } from '../../../stores/authStore'
+import {
+  WHATSAPP_NUMBERS,
+  generateBookingAdminMessage,
+  generateBookingPipelineMessage,
+  generateWhatsAppUrl,
+  getUserWhatsAppNumber,
+} from '../../../lib/whatsapp'
+import type { Booking, Worker, User } from '../../../types'
 
 const BOOKING_STATUSES = [
   'inquiry', 'matched', 'booked', 'placement_fee_paid',
@@ -25,43 +33,51 @@ const STATUS_COLORS: Record<string, string> = {
 }
 
 export default function AdminBookings() {
+  const { user } = useAuthStore()
   const [bookings, setBookings] = useState<Booking[]>([])
   const [workers, setWorkers] = useState<Worker[]>([])
+  const [users, setUsers] = useState<Map<string, User>>(new Map())
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const addToast = useToastStore((s) => s.addToast)
 
-  useEffect(() => {
-    fetchData()
-  }, [])
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true)
     try {
-      const [bookingsSnap, workersSnap] = await Promise.all([
+      const [bookingsSnap, workersSnap, usersSnap] = await Promise.all([
         getDocs(query(collection(db, 'bookings'), orderBy('createdAt', 'desc'), limit(50))),
         getDocs(collection(db, 'workers')),
+        getDocs(collection(db, 'users')),
       ])
       setBookings(bookingsSnap.docs.map((d) => ({ id: d.id, ...d.data() }) as Booking))
       setWorkers(workersSnap.docs.map((d) => ({ id: d.id, ...d.data() }) as Worker))
-    } catch (err) {
+      const userMap = new Map<string, User>()
+      usersSnap.docs.forEach((d) => userMap.set(d.id, { id: d.id, ...d.data() } as User))
+      setUsers(userMap)
+    } catch {
       addToast('Failed to load bookings', 'error')
     }
     setLoading(false)
-  }
+  }, [addToast])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
 
   const updateStatus = async (bookingId: string, status: string) => {
     try {
       await updateDoc(doc(db, 'bookings', bookingId), {
         status,
+        updatedBy: user?.id || 'admin',
+        updatedByName: user?.name || 'Admin',
         updatedAt: serverTimestamp(),
       })
       setBookings((prev) =>
         prev.map((b) => (b.id === bookingId ? { ...b, status: status as Booking['status'] } : b))
       )
-    } catch (err) {
+    } catch {
       addToast('Failed to update booking status', 'error')
     }
   }
@@ -70,6 +86,8 @@ export default function AdminBookings() {
     const worker = workers.find((w) => w.id === workerId)
     return worker?.displayName || 'Unknown'
   }
+
+  const getClient = (clientId: string) => users.get(clientId)
 
   const formatDate = (ts: unknown) => {
     if (!ts) return '—'
@@ -175,6 +193,10 @@ export default function AdminBookings() {
                 <div className="border-t border-slate-100 px-5 py-4 space-y-4">
                   <div className="grid gap-4 sm:grid-cols-3 text-sm">
                     <div>
+                      <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Client</p>
+                      <p className="font-medium text-slate-700 mt-1">{getClient(booking.clientId)?.name || 'Unknown client'}</p>
+                    </div>
+                    <div>
                       <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Worker</p>
                       <p className="font-medium text-slate-700 mt-1">{getWorkerName(booking.workerId)}</p>
                     </div>
@@ -204,10 +226,20 @@ export default function AdminBookings() {
                             try {
                               await updateDoc(doc(db, 'bookings', booking.id), {
                                 placementFeePaid: !booking.placementFeePaid,
+                                paynowStatus: !booking.placementFeePaid ? 'manual_paid' : 'pending',
+                                paynowPaidAt: !booking.placementFeePaid ? serverTimestamp() : null,
+                                status: !booking.placementFeePaid ? 'placement_fee_paid' : booking.status,
+                                updatedBy: user?.id || 'admin',
+                                updatedByName: user?.name || 'Admin',
                                 updatedAt: serverTimestamp(),
                               })
                               setBookings((prev) =>
-                                prev.map((b) => (b.id === booking.id ? { ...b, placementFeePaid: !b.placementFeePaid } : b))
+                                prev.map((b) => (b.id === booking.id ? {
+                                  ...b,
+                                  placementFeePaid: !b.placementFeePaid,
+                                  paynowStatus: !b.placementFeePaid ? 'manual_paid' : 'pending',
+                                  status: !b.placementFeePaid ? 'placement_fee_paid' : b.status,
+                                } : b))
                               )
                               addToast(`Payment marked as ${booking.placementFeePaid ? 'pending' : 'paid'}`, 'success')
                             } catch {
@@ -225,6 +257,49 @@ export default function AdminBookings() {
                       <p className="font-medium text-slate-700 mt-1">
                         {booking.clientAddress?.suburb || '—'}
                       </p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">WhatsApp Quick Actions</p>
+                    <div className="flex flex-wrap gap-2">
+                      {(() => {
+                        const client = getClient(booking.clientId)
+                        const clientPhone = getUserWhatsAppNumber(client)
+                        const workerName = getWorkerName(booking.workerId)
+                        const clientName = client?.name || 'there'
+
+                        return (
+                          <>
+                            {clientPhone && (
+                              <a
+                                href={generateWhatsAppUrl(
+                                  clientPhone,
+                                  generateBookingPipelineMessage(booking, workerName, clientName)
+                                )}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 rounded-xl bg-green-600 px-4 py-2 text-xs font-bold text-white transition hover:bg-green-700"
+                              >
+                                <MessageCircle className="h-4 w-4" />
+                                DM Client Update
+                              </a>
+                            )}
+                            <a
+                              href={generateWhatsAppUrl(
+                                WHATSAPP_NUMBERS.bookings,
+                                generateBookingAdminMessage(booking, workerName, client?.name || 'Unknown client')
+                              )}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 rounded-xl border border-green-200 bg-green-50 px-4 py-2 text-xs font-bold text-green-700 transition hover:bg-green-100"
+                            >
+                              <Send className="h-4 w-4" />
+                              Send to Admin WhatsApp
+                            </a>
+                          </>
+                        )
+                      })()}
                     </div>
                   </div>
 

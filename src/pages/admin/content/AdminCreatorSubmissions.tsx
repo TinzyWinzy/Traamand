@@ -1,7 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
   Search, Loader2, Video, Camera, FileText, ExternalLink,
-  CheckCircle, XCircle, Clock, DollarSign,
 } from 'lucide-react'
 import { collection, getDocs, query, orderBy, limit, doc, updateDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../../../firebase/config'
@@ -30,11 +29,7 @@ export default function AdminCreatorSubmissions() {
   const [filterStatus, setFilterStatus] = useState<string>('')
   const [actionId, setActionId] = useState<string | null>(null)
 
-  useEffect(() => {
-    fetchData()
-  }, [])
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true)
     try {
       const [subSnap, usersSnap] = await Promise.all([
@@ -49,12 +44,19 @@ export default function AdminCreatorSubmissions() {
       addToast('Failed to load submissions', 'error')
     }
     setLoading(false)
-  }
+  }, [addToast])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
 
   const handleAction = async (subId: string, newStatus: 'approved' | 'rejected' | 'paid', payoutAmount = 0) => {
     setActionId(subId)
     try {
-      const updateData: Record<string, any> = { status: newStatus, updatedAt: serverTimestamp() }
+      const updateData: Record<string, unknown> = {
+        status: newStatus,
+        updatedAt: serverTimestamp(),
+      }
       if (payoutAmount > 0) updateData.payoutAmount = payoutAmount
       await updateDoc(doc(db, 'creatorSubmissions', subId), updateData)
 

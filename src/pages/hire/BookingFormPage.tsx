@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useParams, useNavigate, Link, useLocation } from 'react-router-dom'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
@@ -14,10 +14,12 @@ import {
   Clock,
   BadgeCheck,
 } from 'lucide-react'
-import { Timestamp } from 'firebase/firestore'
+import { Timestamp, doc, setDoc, serverTimestamp } from 'firebase/firestore'
 import { getWorker, createBooking } from '../../firebase/firestore'
+import { db } from '../../firebase/config'
 import { bookingSchema, type BookingFormSchema } from '../../lib/validation'
 import { useAuthStore } from '../../stores/authStore'
+import { useToastStore } from '../../stores/toastStore'
 import type { Worker, ServiceCategory } from '../../types'
 
 type Step = 1 | 2 | 3
@@ -25,11 +27,13 @@ type Step = 1 | 2 | 3
 export default function BookingFormPage() {
   const { slug } = useParams<{ slug: string }>()
   const navigate = useNavigate()
+  const location = useLocation()
   const [worker, setWorker] = useState<Worker | null>(null)
   const [loading, setLoading] = useState(true)
   const [step, setStep] = useState<Step>(1)
   const [submitting, setSubmitting] = useState(false)
   const { user, isAuthenticated } = useAuthStore()
+  const addToast = useToastStore((s) => s.addToast)
 
   const {
     register,
@@ -38,10 +42,17 @@ export default function BookingFormPage() {
     watch,
     control,
     trigger,
+    setValue,
+    reset,
+    getValues,
   } = useForm<BookingFormSchema>({
     resolver: zodResolver(bookingSchema) as any,
     defaultValues: {
       workerId: '',
+      clientName: '',
+      clientPhone: '',
+      clientWhatsapp: '',
+      clientEmail: '',
       startDate: '',
       workType: undefined,
       street: '',
@@ -63,13 +74,38 @@ export default function BookingFormPage() {
     if (!slug) return
     getWorker(slug).then((w) => {
       setWorker(w)
+      if (w) {
+        const saved = sessionStorage.getItem(`traamand_booking_${slug}`)
+        if (saved) {
+          try {
+            reset({
+              ...JSON.parse(saved),
+              workerId: w.id,
+              placementFee: w.placementFee || 0,
+            })
+          } catch {
+            sessionStorage.removeItem(`traamand_booking_${slug}`)
+          }
+        } else {
+          setValue('workerId', w.id, { shouldValidate: true })
+          setValue('placementFee', w.placementFee || 0, { shouldValidate: true })
+        }
+      }
       setLoading(false)
     })
-  }, [slug])
+  }, [slug, reset, setValue])
+
+  useEffect(() => {
+    if (!user) return
+    setValue('clientName', user.name || '', { shouldValidate: false })
+    setValue('clientPhone', user.phone || user.whatsappNumber || '', { shouldValidate: false })
+    setValue('clientWhatsapp', user.whatsappNumber || user.phone || '', { shouldValidate: false })
+    setValue('clientEmail', user.email || '', { shouldValidate: false })
+  }, [setValue, user])
 
   const stepFields: Record<Step, (keyof BookingFormSchema)[]> = {
     1: ['workType', 'startDate'],
-    2: ['street', 'suburb'],
+    2: ['clientName', 'clientPhone', 'clientWhatsapp', 'street', 'suburb'],
     3: [],
   }
 
@@ -89,14 +125,33 @@ export default function BookingFormPage() {
   const onSubmit = async (data: BookingFormSchema) => {
     if (!worker) return
     if (!isAuthenticated || !user) {
-      navigate('/sign-in')
+      if (slug) {
+        sessionStorage.setItem(`traamand_booking_${slug}`, JSON.stringify(getValues()))
+      }
+      navigate(`/sign-in?redirect=${encodeURIComponent(`${location.pathname}${location.search}`)}`)
       return
     }
     setSubmitting(true)
 
     try {
+      await setDoc(
+        doc(db, 'users', user.id),
+        {
+          name: data.clientName,
+          phone: data.clientPhone,
+          whatsappNumber: data.clientWhatsapp,
+          email: data.clientEmail || user.email || '',
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true }
+      )
+
       const bookingId = await createBooking({
         clientId: user.id,
+        clientName: data.clientName,
+        clientPhone: data.clientPhone,
+        clientWhatsapp: data.clientWhatsapp,
+        clientEmail: data.clientEmail || user.email || '',
         workerId: worker.id,
         serviceType: (worker.category || 'Maid') as ServiceCategory,
         workType: data.workType,
@@ -113,7 +168,9 @@ export default function BookingFormPage() {
         placementFee: worker.placementFee,
         placementFeePaid: false,
         paynowPollUrl: '',
+        paynowReference: '',
         paynowStatus: 'pending',
+        paynowPaidAt: null,
         status: 'inquiry',
         workerArrivedAt: null,
         clientCheckIn: {},
@@ -121,7 +178,11 @@ export default function BookingFormPage() {
         replacementReason: '',
       })
 
-      navigate(`/book/${slug}/confirmation`, {
+      if (slug) {
+        sessionStorage.removeItem(`traamand_booking_${slug}`)
+      }
+
+      navigate(`/book/${slug}/confirmation?bookingId=${bookingId}`, {
         state: {
           bookingId,
           workerName: worker.displayName,
@@ -136,6 +197,7 @@ export default function BookingFormPage() {
       })
     } catch (err) {
       console.error('Failed to create booking:', err)
+      addToast('We could not create the booking. Please try again.', 'error')
       setSubmitting(false)
     }
   }
@@ -298,8 +360,59 @@ export default function BookingFormPage() {
             {step === 2 && (
               <div className="space-y-6">
                 <div>
-                  <h2 className="text-xl font-bold text-slate-900">Where should they go?</h2>
-                  <p className="mt-1 text-sm text-slate-500">Your address helps us match you with nearby workers.</p>
+                  <h2 className="text-xl font-bold text-slate-900">Your contact and location</h2>
+                  <p className="mt-1 text-sm text-slate-500">We use these details for WhatsApp updates and placement follow-up.</p>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-slate-700">Full Name</label>
+                    <input
+                      type="text"
+                      {...register('clientName')}
+                      placeholder="e.g. Tendai Mukanya"
+                      className="w-full rounded-xl border border-slate-200 px-4 py-3.5 text-sm font-medium outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
+                    />
+                    {errors.clientName && (
+                      <p className="mt-1.5 text-xs font-medium text-red-600">{errors.clientName.message}</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-slate-700">Email</label>
+                    <input
+                      type="email"
+                      {...register('clientEmail')}
+                      placeholder="you@example.com"
+                      className="w-full rounded-xl border border-slate-200 px-4 py-3.5 text-sm font-medium outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
+                    />
+                    {errors.clientEmail && (
+                      <p className="mt-1.5 text-xs font-medium text-red-600">{errors.clientEmail.message}</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-slate-700">Phone Number</label>
+                    <input
+                      type="tel"
+                      {...register('clientPhone')}
+                      placeholder="0772 123 456"
+                      className="w-full rounded-xl border border-slate-200 px-4 py-3.5 text-sm font-medium outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
+                    />
+                    {errors.clientPhone && (
+                      <p className="mt-1.5 text-xs font-medium text-red-600">{errors.clientPhone.message}</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-slate-700">WhatsApp Number</label>
+                    <input
+                      type="tel"
+                      {...register('clientWhatsapp')}
+                      placeholder="0772 123 456"
+                      className="w-full rounded-xl border border-slate-200 px-4 py-3.5 text-sm font-medium outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
+                    />
+                    {errors.clientWhatsapp && (
+                      <p className="mt-1.5 text-xs font-medium text-red-600">{errors.clientWhatsapp.message}</p>
+                    )}
+                  </div>
                 </div>
 
                 <div>

@@ -21,5 +21,5 @@ export default async function middleware(request) {
         },
       })
     }
-  } catch (_) {}
+  } catch {}
 }

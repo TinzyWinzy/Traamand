@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { Routes, Route, useNavigate } from 'react-router-dom'
 import Navbar from './components/layout/Navbar'
 import Footer from './components/layout/Footer'
@@ -7,43 +8,43 @@ import ErrorBoundary from './components/ui/ErrorBoundary'
 import ToastContainer from './components/ui/Toast'
 import { AuthListener, AuthGuard } from './components/auth/AuthGuard'
 
-import AvailableStaff from './pages/AvailableStaff'
-import FindMaid from './pages/FindMaid'
-import JoinTeam from './pages/JoinTeam'
-import NotFound from './pages/NotFound'
-import SignIn from './pages/SignIn'
-import HomePage from './pages/hire/EmergencyHire'
-import WorkerList from './pages/hire/WorkerList'
-import BookingFormPage from './pages/hire/BookingFormPage'
-import BookingConfirmation from './pages/hire/BookingConfirmation'
-import WorkerProfile from './pages/worker/WorkerProfile'
-import MyHires from './pages/my-hires/MyHires'
-import MyReferrals from './pages/MyReferrals'
-import ReferralLandingPage from './pages/ReferralLandingPage'
-import VerifierTasks from './pages/verifier/VerifierTasks'
-import CreatorDashboard from './pages/creator/CreatorDashboard'
-import SponsorDashboard from './pages/sponsor/SponsorDashboard'
-import AdvertiseDashboard from './pages/advertise/AdvertiseDashboard'
-import AdminLayout from './components/admin/AdminLayout'
-import AdminDashboard from './pages/admin/AdminDashboard'
-import AdminWorkers from './pages/admin/workers/AdminWorkers'
-import WorkerForm from './pages/admin/workers/WorkerForm'
-import AdminClients from './pages/admin/clients/AdminClients'
-import AdminBookings from './pages/admin/bookings/AdminBookings'
-import AdminPayments from './pages/admin/payments/AdminPayments'
-import AdminApplicants from './pages/admin/applicants/AdminApplicants'
-import AdminUsers from './pages/admin/users/AdminUsers'
-import AdminPayouts from './pages/admin/payouts/AdminPayouts'
-import AdminCreatorSubmissions from './pages/admin/content/AdminCreatorSubmissions'
-import AdminVerifierTasks from './pages/admin/tasks/AdminVerifierTasks'
-import AdminSignIn from './pages/admin/AdminSignIn'
-import VerifierSignIn from './pages/verifier/VerifierSignIn'
-import CreatorSignIn from './pages/creator/CreatorSignIn'
-import SponsorSignIn from './pages/sponsor/SponsorSignIn'
-import AdvertiseSignIn from './pages/advertise/AdvertiseSignIn'
-import ApplicantSignIn from './pages/applicant/ApplicantSignIn'
-import ApplicantDashboard from './pages/applicant/ApplicantDashboard'
-import ClientDashboard from './pages/client/ClientDashboard'
+const AvailableStaff = lazy(() => import('./pages/AvailableStaff'))
+const FindMaid = lazy(() => import('./pages/FindMaid'))
+const JoinTeam = lazy(() => import('./pages/JoinTeam'))
+const NotFound = lazy(() => import('./pages/NotFound'))
+const SignIn = lazy(() => import('./pages/SignIn'))
+const HomePage = lazy(() => import('./pages/hire/EmergencyHire'))
+const WorkerList = lazy(() => import('./pages/hire/WorkerList'))
+const BookingFormPage = lazy(() => import('./pages/hire/BookingFormPage'))
+const BookingConfirmation = lazy(() => import('./pages/hire/BookingConfirmation'))
+const WorkerProfile = lazy(() => import('./pages/worker/WorkerProfile'))
+const MyHires = lazy(() => import('./pages/my-hires/MyHires'))
+const MyReferrals = lazy(() => import('./pages/MyReferrals'))
+const ReferralLandingPage = lazy(() => import('./pages/ReferralLandingPage'))
+const VerifierTasks = lazy(() => import('./pages/verifier/VerifierTasks'))
+const CreatorDashboard = lazy(() => import('./pages/creator/CreatorDashboard'))
+const SponsorDashboard = lazy(() => import('./pages/sponsor/SponsorDashboard'))
+const AdvertiseDashboard = lazy(() => import('./pages/advertise/AdvertiseDashboard'))
+const AdminLayout = lazy(() => import('./components/admin/AdminLayout'))
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'))
+const AdminWorkers = lazy(() => import('./pages/admin/workers/AdminWorkers'))
+const WorkerForm = lazy(() => import('./pages/admin/workers/WorkerForm'))
+const AdminClients = lazy(() => import('./pages/admin/clients/AdminClients'))
+const AdminBookings = lazy(() => import('./pages/admin/bookings/AdminBookings'))
+const AdminPayments = lazy(() => import('./pages/admin/payments/AdminPayments'))
+const AdminApplicants = lazy(() => import('./pages/admin/applicants/AdminApplicants'))
+const AdminUsers = lazy(() => import('./pages/admin/users/AdminUsers'))
+const AdminPayouts = lazy(() => import('./pages/admin/payouts/AdminPayouts'))
+const AdminCreatorSubmissions = lazy(() => import('./pages/admin/content/AdminCreatorSubmissions'))
+const AdminVerifierTasks = lazy(() => import('./pages/admin/tasks/AdminVerifierTasks'))
+const AdminSignIn = lazy(() => import('./pages/admin/AdminSignIn'))
+const VerifierSignIn = lazy(() => import('./pages/verifier/VerifierSignIn'))
+const CreatorSignIn = lazy(() => import('./pages/creator/CreatorSignIn'))
+const SponsorSignIn = lazy(() => import('./pages/sponsor/SponsorSignIn'))
+const AdvertiseSignIn = lazy(() => import('./pages/advertise/AdvertiseSignIn'))
+const ApplicantSignIn = lazy(() => import('./pages/applicant/ApplicantSignIn'))
+const ApplicantDashboard = lazy(() => import('./pages/applicant/ApplicantDashboard'))
+const ClientDashboard = lazy(() => import('./pages/client/ClientDashboard'))
 
 function AuthRoute({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate()
@@ -121,6 +122,7 @@ export default function App() {
       <Navbar />
       <ToastContainer />
       <main className="flex-1">
+        <Suspense fallback={<div className="flex min-h-[60vh] items-center justify-center text-sm font-semibold text-slate-500">Loading...</div>}>
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/available-staff" element={<AvailableStaff />} />
@@ -227,6 +229,7 @@ export default function App() {
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
+        </Suspense>
       </main>
       <Footer />
       <WhatsAppWidget />

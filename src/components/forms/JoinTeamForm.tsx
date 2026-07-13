@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Check, Upload, Loader2, Briefcase, Clock, Building2, TrendingUp } from 'lucide-react'
 import { EDUCATION_LEVELS, LANGUAGES, SERVICE_CATEGORIES } from '../../lib/constants'
-import { createApplicant } from '../../firebase/firestore'
+import { createApplicant, updateApplicant } from '../../firebase/firestore'
 import { uploadApplicantFile } from '../../lib/upload'
 import { useAuthStore } from '../../stores/authStore'
 import { doc, updateDoc } from 'firebase/firestore'
@@ -112,16 +112,12 @@ export default function JoinTeamForm() {
 
       if (nationalIdFile) {
         uploadApplicantFile(nationalIdFile, applicantId, 'nationalId').then((url) => {
-          import('../../firebase/firestore').then(({ updateApplicant }) =>
-            updateApplicant(applicantId, { nationalIdUrl: url })
-          )
+          updateApplicant(applicantId, { nationalIdUrl: url })
         })
       }
       if (policeClearanceFile) {
         uploadApplicantFile(policeClearanceFile, applicantId, 'policeClearance').then((url) => {
-          import('../../firebase/firestore').then(({ updateApplicant }) =>
-            updateApplicant(applicantId, { policeClearanceUrl: url })
-          )
+          updateApplicant(applicantId, { policeClearanceUrl: url })
         })
       }
     } catch (err) {

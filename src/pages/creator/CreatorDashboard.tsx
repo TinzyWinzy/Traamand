@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
-  Video, Camera, FileText, TrendingUp, DollarSign, CheckCircle,
+  Video, Camera, FileText, DollarSign, CheckCircle,
   XCircle, Clock, Upload, Loader2, ArrowLeft, ExternalLink,
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
@@ -51,7 +51,7 @@ export default function CreatorDashboard() {
         setLoading(false)
       })
     }
-  }, [authLoading, user?.id])
+  }, [addToast, authLoading, isAuthenticated, navigate, user?.id])
 
   const handleSubmit = async () => {
     if (!url.trim() || !user?.id) return

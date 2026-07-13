@@ -1,7 +1,13 @@
 import * as admin from 'firebase-admin'
-import { getCommission, isReferralMilestoneReached, getCashbackAmount } from './commission'
+import { getCommission, getCashbackAmount } from './commission'
 
-const db = admin.firestore()
+function db(): admin.firestore.Firestore {
+  return admin.firestore()
+}
+
+function timestamp() {
+  return admin.firestore.FieldValue.serverTimestamp()
+}
 
 interface CreditRewardParams {
   userId: string
@@ -9,32 +15,49 @@ interface CreditRewardParams {
   event: string
   reference: string
   description: string
+  amountOverride?: number
 }
 
-async function creditUser({ userId, type, event, reference, description }: CreditRewardParams): Promise<void> {
-  const userRef = db.collection('users').doc(userId)
-  const userSnap = await userRef.get()
-  if (!userSnap.exists) return
-
-  const userData = userSnap.data()!
-  const { amount } = getCommission(event)
+async function creditUser({
+  userId,
+  type,
+  event,
+  reference,
+  description,
+  amountOverride,
+}: CreditRewardParams): Promise<void> {
+  const userRef = db().collection('users').doc(userId)
+  const { amount: configuredAmount } = getCommission(event)
+  const amount = amountOverride ?? configuredAmount
   if (amount <= 0) return
 
-  const currentBalance = userData.earningsBalance || 0
-  const newBalance = currentBalance + amount
+  const rewardId = `${userId}_${type}_${reference}`.replace(/[^A-Za-z0-9_-]/g, '_')
+  const txnRef = db().collection('transactions').doc(rewardId)
 
-  await db.collection('transactions').add({
-    userId,
-    type,
-    amount,
-    balance: newBalance,
-    reference,
-    description,
-    status: 'completed',
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+  await db().runTransaction(async (tx) => {
+    const [userSnap, existingTxn] = await Promise.all([tx.get(userRef), tx.get(txnRef)])
+    if (!userSnap.exists || existingTxn.exists) return
+
+    const userData = userSnap.data()!
+    const currentBalance = userData.earningsBalance || 0
+    const newBalance = currentBalance + amount
+
+    tx.set(txnRef, {
+      userId,
+      type,
+      amount,
+      balance: newBalance,
+      reference,
+      description,
+      status: 'completed',
+      createdAt: timestamp(),
+    })
+
+    tx.update(userRef, {
+      earningsBalance: newBalance,
+      updatedAt: timestamp(),
+    })
   })
-
-  await userRef.update({ earningsBalance: newBalance })
 }
 
 export async function creditReferralBonus(
@@ -72,7 +95,7 @@ export async function creditPlacementBonus(
 ): Promise<void> {
   await creditUser({
     userId,
-    type: 'referral_placement',
+    type: 'referral_bonus',
     event: 'referral_placement',
     reference,
     description,
@@ -87,26 +110,14 @@ export async function creditCashback(
   const amount = getCashbackAmount(totalReferrals)
   if (amount <= 0) return
 
-  const userRef = db.collection('users').doc(userId)
-  const userSnap = await userRef.get()
-  if (!userSnap.exists) return
-
-  const userData = userSnap.data()!
-  const currentBalance = userData.earningsBalance || 0
-  const newBalance = currentBalance + amount
-
-  await db.collection('transactions').add({
+  await creditUser({
     userId,
-    type: 'cashback_refund',
-    amount,
-    balance: newBalance,
+    type: 'cashback',
+    event: 'cashback_refund',
     reference,
     description: `Cashback milestone: ${totalReferrals} referral${totalReferrals > 1 ? 's' : ''}`,
-    status: 'completed',
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    amountOverride: amount,
   })
-
-  await userRef.update({ earningsBalance: newBalance })
 }
 
 export interface ReferralChainResult {
@@ -122,18 +133,21 @@ export async function resolveReferralChain(referredBy: string): Promise<Referral
     referrerTotalSignups: 0,
   }
 
-  const referrerSnap = await db.collection('users').where('referralCode', '==', referredBy).limit(1).get()
+  const normalizedCode = referredBy.trim().toUpperCase()
+
+  const referrerSnap = await db().collection('users').where('referralCode', '==', normalizedCode).limit(1).get()
   if (referrerSnap.empty) return result
 
   const referrer = referrerSnap.docs[0]
   result.referrerId = referrer.id
 
-  const signupsSnap = await db.collection('users').where('referredBy', '==', referredBy).get()
+  const signupsSnap = await db().collection('users').where('referredBy', '==', normalizedCode).get()
   result.referrerTotalSignups = signupsSnap.size
 
   const referrerData = referrer.data()
   if (referrerData.referredBy) {
-    const gpSnap = await db.collection('users').where('referralCode', '==', referrerData.referredBy).limit(1).get()
+    const gpCode = String(referrerData.referredBy).trim().toUpperCase()
+    const gpSnap = await db().collection('users').where('referralCode', '==', gpCode).limit(1).get()
     if (!gpSnap.empty) {
       result.grandparentId = gpSnap.docs[0].id
     }

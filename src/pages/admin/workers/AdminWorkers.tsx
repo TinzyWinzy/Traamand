@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   Plus,
@@ -41,17 +41,7 @@ export default function AdminWorkers() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
 
-  useEffect(() => {
-    if (!authLoading && (!isAuthenticated || user?.role !== 'admin')) {
-      navigate('/sign-in')
-      return
-    }
-    if (!authLoading && isAuthenticated) {
-      fetchData()
-    }
-  }, [authLoading, isAuthenticated, user])
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true)
     try {
       const [workersSnap, bookingsSnap] = await Promise.all([
@@ -64,7 +54,17 @@ export default function AdminWorkers() {
       addToast('Failed to load workers', 'error')
     }
     setLoading(false)
-  }
+  }, [addToast])
+
+  useEffect(() => {
+    if (!authLoading && (!isAuthenticated || user?.role !== 'admin')) {
+      navigate('/sign-in')
+      return
+    }
+    if (!authLoading && isAuthenticated) {
+      fetchData()
+    }
+  }, [authLoading, fetchData, isAuthenticated, navigate, user?.role])
 
   const seedWorkers = async () => {
     if (!confirm('Seed 11 sample workers across all categories? They will appear on the landing page immediately.')) return

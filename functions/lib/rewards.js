@@ -40,29 +40,42 @@ exports.creditCashback = creditCashback;
 exports.resolveReferralChain = resolveReferralChain;
 const admin = __importStar(require("firebase-admin"));
 const commission_1 = require("./commission");
-const db = admin.firestore();
-async function creditUser({ userId, type, event, reference, description }) {
-    const userRef = db.collection('users').doc(userId);
-    const userSnap = await userRef.get();
-    if (!userSnap.exists)
-        return;
-    const userData = userSnap.data();
-    const { amount } = (0, commission_1.getCommission)(event);
+function db() {
+    return admin.firestore();
+}
+function timestamp() {
+    return admin.firestore.FieldValue.serverTimestamp();
+}
+async function creditUser({ userId, type, event, reference, description, amountOverride, }) {
+    const userRef = db().collection('users').doc(userId);
+    const { amount: configuredAmount } = (0, commission_1.getCommission)(event);
+    const amount = amountOverride ?? configuredAmount;
     if (amount <= 0)
         return;
-    const currentBalance = userData.earningsBalance || 0;
-    const newBalance = currentBalance + amount;
-    await db.collection('transactions').add({
-        userId,
-        type,
-        amount,
-        balance: newBalance,
-        reference,
-        description,
-        status: 'completed',
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    const rewardId = `${userId}_${type}_${reference}`.replace(/[^A-Za-z0-9_-]/g, '_');
+    const txnRef = db().collection('transactions').doc(rewardId);
+    await db().runTransaction(async (tx) => {
+        const [userSnap, existingTxn] = await Promise.all([tx.get(userRef), tx.get(txnRef)]);
+        if (!userSnap.exists || existingTxn.exists)
+            return;
+        const userData = userSnap.data();
+        const currentBalance = userData.earningsBalance || 0;
+        const newBalance = currentBalance + amount;
+        tx.set(txnRef, {
+            userId,
+            type,
+            amount,
+            balance: newBalance,
+            reference,
+            description,
+            status: 'completed',
+            createdAt: timestamp(),
+        });
+        tx.update(userRef, {
+            earningsBalance: newBalance,
+            updatedAt: timestamp(),
+        });
     });
-    await userRef.update({ earningsBalance: newBalance });
 }
 async function creditReferralBonus(userId, reference, description) {
     await creditUser({
@@ -85,7 +98,7 @@ async function creditGrandparentBonus(userId, reference, description) {
 async function creditPlacementBonus(userId, reference, description) {
     await creditUser({
         userId,
-        type: 'referral_placement',
+        type: 'referral_bonus',
         event: 'referral_placement',
         reference,
         description,
@@ -95,24 +108,14 @@ async function creditCashback(userId, totalReferrals, reference) {
     const amount = (0, commission_1.getCashbackAmount)(totalReferrals);
     if (amount <= 0)
         return;
-    const userRef = db.collection('users').doc(userId);
-    const userSnap = await userRef.get();
-    if (!userSnap.exists)
-        return;
-    const userData = userSnap.data();
-    const currentBalance = userData.earningsBalance || 0;
-    const newBalance = currentBalance + amount;
-    await db.collection('transactions').add({
+    await creditUser({
         userId,
-        type: 'cashback_refund',
-        amount,
-        balance: newBalance,
+        type: 'cashback',
+        event: 'cashback_refund',
         reference,
         description: `Cashback milestone: ${totalReferrals} referral${totalReferrals > 1 ? 's' : ''}`,
-        status: 'completed',
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        amountOverride: amount,
     });
-    await userRef.update({ earningsBalance: newBalance });
 }
 async function resolveReferralChain(referredBy) {
     const result = {
@@ -120,16 +123,18 @@ async function resolveReferralChain(referredBy) {
         grandparentId: null,
         referrerTotalSignups: 0,
     };
-    const referrerSnap = await db.collection('users').where('referralCode', '==', referredBy).limit(1).get();
+    const normalizedCode = referredBy.trim().toUpperCase();
+    const referrerSnap = await db().collection('users').where('referralCode', '==', normalizedCode).limit(1).get();
     if (referrerSnap.empty)
         return result;
     const referrer = referrerSnap.docs[0];
     result.referrerId = referrer.id;
-    const signupsSnap = await db.collection('users').where('referredBy', '==', referredBy).get();
+    const signupsSnap = await db().collection('users').where('referredBy', '==', normalizedCode).get();
     result.referrerTotalSignups = signupsSnap.size;
     const referrerData = referrer.data();
     if (referrerData.referredBy) {
-        const gpSnap = await db.collection('users').where('referralCode', '==', referrerData.referredBy).limit(1).get();
+        const gpCode = String(referrerData.referredBy).trim().toUpperCase();
+        const gpSnap = await db().collection('users').where('referralCode', '==', gpCode).limit(1).get();
         if (!gpSnap.empty) {
             result.grandparentId = gpSnap.docs[0].id;
         }

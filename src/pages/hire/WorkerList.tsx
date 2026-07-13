@@ -32,7 +32,10 @@ export default function WorkerList() {
     language: '',
   })
 
-  const category = CATEGORIES.find((c) => c.slug === categorySlug)
+  const category = useMemo(
+    () => CATEGORIES.find((c) => c.slug === categorySlug),
+    [categorySlug]
+  )
 
   useEffect(() => {
     setLoading(true)
@@ -64,7 +67,7 @@ export default function WorkerList() {
       .catch(() => {
         setLoading(false)
       })
-  }, [categorySlug])
+  }, [category])
 
   const filtered = useMemo(() => {
     return workers.filter((w) => {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import {
   ArrowLeft,
@@ -6,13 +6,11 @@ import {
   Loader2,
   Plus,
   X,
-  Upload,
 } from 'lucide-react'
 import { doc, getDoc, setDoc, addDoc, serverTimestamp } from 'firebase/firestore'
 import { collection as fbCollection } from 'firebase/firestore'
 import { db } from '../../../firebase/config'
 import { useAuthStore } from '../../../stores/authStore'
-import type { Worker } from '../../../types'
 import { useToastStore } from '../../../stores/toastStore'
 import { generateWorkerSlug } from '../../../lib/worker'
 
@@ -62,19 +60,10 @@ export default function WorkerForm() {
     isActive: true,
   })
 
-  useEffect(() => {
-    if (!authLoading && (!isAuthenticated || user?.role !== 'admin')) {
-      navigate('/sign-in')
-      return
-    }
-    if (isEdit) {
-      loadWorker()
-    }
-  }, [authLoading, isAuthenticated])
-
-  const loadWorker = async () => {
+  const loadWorker = useCallback(async () => {
+    if (!id) return
     setLoading(true)
-    const snap = await getDoc(doc(db, 'workers', id!))
+    const snap = await getDoc(doc(db, 'workers', id))
     if (snap.exists()) {
       const w = snap.data()
       setForm({
@@ -106,7 +95,17 @@ export default function WorkerForm() {
       })
     }
     setLoading(false)
-  }
+  }, [id])
+
+  useEffect(() => {
+    if (!authLoading && (!isAuthenticated || user?.role !== 'admin')) {
+      navigate('/sign-in')
+      return
+    }
+    if (isEdit) {
+      loadWorker()
+    }
+  }, [authLoading, isAuthenticated, isEdit, loadWorker, navigate, user?.role])
 
   const addSkill = () => {
     if (form.newSkill.trim() && !form.skills.includes(form.newSkill.trim().toLowerCase())) {
@@ -181,7 +180,7 @@ export default function WorkerForm() {
         await addDoc(fbCollection(db, 'workers'), workerData)
       }
       navigate('/admin/workers')
-    } catch (err) {
+    } catch {
       addToast('Failed to save worker', 'error')
     }
     setSaving(false)

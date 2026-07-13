@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   Search,
@@ -27,18 +27,9 @@ export default function AdminClients() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [roleEdit, setRoleEdit] = useState<string | null>(null)
+  const addToast = useToastStore((s) => s.addToast)
 
-  useEffect(() => {
-    if (!authLoading && (!isAuthenticated || user?.role !== 'admin')) {
-      navigate('/sign-in')
-      return
-    }
-    if (!authLoading && isAuthenticated) {
-      fetchData()
-    }
-  }, [authLoading, isAuthenticated])
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true)
     try {
       const usersSnap = await getDocs(query(collection(db, 'users'), orderBy('createdAt', 'desc'), limit(50)))
@@ -50,7 +41,17 @@ export default function AdminClients() {
       addToast('Failed to load clients', 'error')
     }
     setLoading(false)
-  }
+  }, [addToast])
+
+  useEffect(() => {
+    if (!authLoading && (!isAuthenticated || user?.role !== 'admin')) {
+      navigate('/sign-in')
+      return
+    }
+    if (!authLoading && isAuthenticated) {
+      fetchData()
+    }
+  }, [authLoading, fetchData, isAuthenticated, navigate, user?.role])
 
   const filtered = clients.filter(
     (c) =>
@@ -58,8 +59,6 @@ export default function AdminClients() {
       c.phone?.includes(search) ||
       c.email?.toLowerCase().includes(search.toLowerCase())
   )
-
-  const addToast = useToastStore((s) => s.addToast)
 
   const updateRole = async (clientId: string, role: UserRole) => {
     try {
@@ -131,7 +130,6 @@ export default function AdminClients() {
           <div className="space-y-4">
             {filtered.map((client) => {
               const clientBookingsList = clientBookings(client.id)
-              const activeBookings = clientBookingsList.filter((b) => !['completed', 'cancelled'].includes(b.status))
               return (
                 <div key={client.id} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">

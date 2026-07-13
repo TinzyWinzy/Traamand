@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
-  Heart, DollarSign, Calendar, CheckCircle, XCircle, Loader2,
-  ArrowLeft, User, Shield, Phone, Users, Clock,
+  Heart, DollarSign, Loader2,
+  ArrowLeft, User, Shield,
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import { useToastStore } from '../../stores/toastStore'
@@ -43,7 +43,7 @@ export default function SponsorDashboard() {
         setLoading(false)
       })
     }
-  }, [authLoading, user?.id])
+  }, [addToast, authLoading, isAuthenticated, navigate, user?.id])
 
   const handleCreate = async () => {
     if (!selectedWorkerId || !clientName.trim() || !user?.id) return

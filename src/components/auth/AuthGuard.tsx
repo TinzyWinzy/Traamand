@@ -70,7 +70,7 @@ export function AuthListener() {
       cancelled = true
       unsubscribe()
     }
-  }, [])
+  }, [clearAuth, setFirebaseUser, setLoading, setUser])
 
   return null
 }

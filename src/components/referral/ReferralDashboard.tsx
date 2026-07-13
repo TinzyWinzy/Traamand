@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Gift, Copy, Share2, TrendingUp, Users, MousePointerClick, DollarSign, Loader2, Check } from 'lucide-react'
+import { Gift, Copy, Share2, Users, MousePointerClick, DollarSign, Loader2, Check } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import { getReferralStats, getTransactions, setReferralCode } from '../../firebase/firestore'
 import { generateReferralCode } from '../../lib/referral'

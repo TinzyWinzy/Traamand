@@ -59,7 +59,7 @@ export default function MyApplication() {
       addToast('Failed to load applications', 'error')
       setLoading(false)
     })
-  }, [user?.id])
+  }, [addToast, user?.id])
 
   const handleLinkApplication = async () => {
     const raw = phoneInput.replace(/\s+/g, '')

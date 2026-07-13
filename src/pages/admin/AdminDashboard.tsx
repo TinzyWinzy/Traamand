@@ -1,14 +1,14 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  Shield, Users, DollarSign, Calendar, BookOpen,
+  Shield, Users, DollarSign, BookOpen,
   UserCircle, UserPlus, TrendingUp, Loader2, ArrowUpRight,
-  Clock, CheckCircle, XCircle, Smartphone,
+  Clock, CheckCircle, Smartphone,
 } from 'lucide-react'
 import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore'
 import { db } from '../../firebase/config'
 import { useToastStore } from '../../stores/toastStore'
-import type { Booking, Worker, Payout, CreatorSubmission, VerifierTask, User as UserType } from '../../types'
+import type { Booking, Worker } from '../../types'
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState({
@@ -30,11 +30,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true)
   const addToast = useToastStore((s) => s.addToast)
 
-  useEffect(() => {
-    fetchStats()
-  }, [])
-
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     try {
       const [
         workersSnap, bookingsSnap, usersSnap, applicantsSnap,
@@ -74,11 +70,15 @@ export default function AdminDashboard() {
       const recentQuery = query(collection(db, 'bookings'), orderBy('createdAt', 'desc'), limit(5))
       const recentSnap = await getDocs(recentQuery)
       setRecentBookings(recentSnap.docs.map((d) => ({ id: d.id, ...d.data() }) as Booking))
-    } catch (err) {
+    } catch {
       addToast('Failed to load dashboard stats', 'error')
     }
     setLoading(false)
-  }
+  }, [addToast])
+
+  useEffect(() => {
+    fetchStats()
+  }, [fetchStats])
 
   if (loading) {
     return (

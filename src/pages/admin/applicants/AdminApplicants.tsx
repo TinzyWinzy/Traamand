@@ -1,19 +1,24 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Search, Loader2, ChevronDown, UserPlus,
-  Phone, MessageCircle, FileText, BookOpen,
-  CheckCircle, X, ExternalLink, ShieldCheck, AlertTriangle,
+  Phone, MessageCircle, FileText,
+  CheckCircle, X, ShieldCheck, AlertTriangle,
 } from 'lucide-react'
-import { collection, getDocs, query, orderBy, limit, doc, updateDoc, serverTimestamp, addDoc } from 'firebase/firestore'
+import { collection, getDocs, query, orderBy, limit, doc, updateDoc, serverTimestamp, addDoc, Timestamp } from 'firebase/firestore'
 import { db } from '../../../firebase/config'
 import { useAuthStore } from '../../../stores/authStore'
-import { generateWhatsAppUrl } from '../../../lib/whatsapp'
+import {
+  WHATSAPP_NUMBERS,
+  generateApplicantAdminMessage,
+  generateApplicantPipelineMessage,
+  generateWhatsAppUrl,
+} from '../../../lib/whatsapp'
 import { generateWorkerSlug } from '../../../lib/worker'
 import { useToastStore } from '../../../stores/toastStore'
-import { verifyNationalId, parseResume, verifyPoliceClearance, computeOverallVerification, makeVerification } from '../../../lib/verification'
+import { verifyNationalId, verifyPoliceClearance, computeOverallVerification, makeVerification } from '../../../lib/verification'
 import { createVerifierTask } from '../../../firebase/firestore'
-import type { Applicant, ApplicantStatus, DocumentVerification, ApplicantVerification } from '../../../types'
+import type { Applicant, ApplicantStatus, ApplicantVerification } from '../../../types'
 
 const PIPELINE_STAGES: { status: ApplicantStatus; label: string; color: string }[] = [
   { status: 'new', label: 'New', color: 'bg-blue-100 text-blue-700' },
@@ -57,6 +62,19 @@ export default function AdminApplicants() {
   const [viewMode, setViewMode] = useState<'table' | 'kanban'>('table')
   const [verification, setVerification] = useState<ApplicantVerification | null>(null)
   const [verifying, setVerifying] = useState(false)
+  const [interviewDate, setInterviewDate] = useState('')
+
+  const fetchApplicants = useCallback(async () => {
+    setLoading(true)
+    try {
+      const q = query(collection(db, 'applicants'), orderBy('createdAt', 'desc'), limit(50))
+      const snap = await getDocs(q)
+      setApplicants(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Applicant))
+    } catch {
+      addToast('Failed to load applicants', 'error')
+    }
+    setLoading(false)
+  }, [addToast])
 
   useEffect(() => {
     if (user?.role !== 'admin') {
@@ -64,32 +82,22 @@ export default function AdminApplicants() {
       return
     }
     fetchApplicants()
-  }, [user])
-
-  const fetchApplicants = async () => {
-    setLoading(true)
-    try {
-      const q = query(collection(db, 'applicants'), orderBy('createdAt', 'desc'), limit(50))
-      const snap = await getDocs(q)
-      setApplicants(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Applicant))
-    } catch (err) {
-      addToast('Failed to load applicants', 'error')
-    }
-    setLoading(false)
-  }
+  }, [fetchApplicants, navigate, user?.role])
 
   const updateStatus = async (applicantId: string, status: ApplicantStatus) => {
     try {
       await updateDoc(doc(db, 'applicants', applicantId), {
         status,
         reviewedBy: user?.name || 'admin',
+        updatedBy: user?.id || 'admin',
+        updatedByName: user?.name || 'Admin',
         reviewedAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       })
       setApplicants((prev) =>
         prev.map((a) => (a.id === applicantId ? { ...a, status, reviewedBy: user?.name || 'admin' } : a))
       )
-    } catch (err) {
+    } catch {
       addToast('Failed to update status', 'error')
     }
   }
@@ -148,6 +156,8 @@ export default function AdminApplicants() {
       await updateDoc(doc(db, 'applicants', applicant.id), {
         status: 'converted',
         convertedWorkerId: workerRef.id,
+        updatedBy: user?.id || 'admin',
+        updatedByName: user?.name || 'Admin',
         updatedAt: serverTimestamp(),
       })
       setApplicants((prev) =>
@@ -157,8 +167,41 @@ export default function AdminApplicants() {
             : a
         )
       )
-    } catch (err) {
+    } catch {
       addToast('Failed to convert applicant', 'error')
+    }
+  }
+
+  const scheduleInterview = async (applicant: Applicant) => {
+    if (!interviewDate) {
+      addToast('Select an interview date first', 'error')
+      return
+    }
+
+    try {
+      const date = new Date(interviewDate)
+      await updateDoc(doc(db, 'applicants', applicant.id), {
+        interviewDate: Timestamp.fromDate(date),
+        status: applicant.status === 'new' ? 'screened' : applicant.status,
+        updatedBy: user?.id || 'admin',
+        updatedByName: user?.name || 'Admin',
+        updatedAt: serverTimestamp(),
+      })
+      setApplicants((prev) =>
+        prev.map((a) =>
+          a.id === applicant.id
+            ? {
+                ...a,
+                interviewDate: Timestamp.fromDate(date),
+                status: a.status === 'new' ? 'screened' : a.status,
+              }
+            : a
+        )
+      )
+      addToast('Interview scheduled', 'success')
+      setInterviewDate('')
+    } catch {
+      addToast('Failed to schedule interview', 'error')
     }
   }
 
@@ -216,11 +259,6 @@ export default function AdminApplicants() {
     const resume = makeVerification({ status: 'pass', issues: [], extractedData: { note: 'Resume parsing not available' } })
     const result = computeOverallVerification(id, resume, police)
     setVerification(result)
-  }
-
-  const resetVerification = () => {
-    setVerification(null)
-    setVerifying(false)
   }
 
   const formatDate = (ts: unknown) => {
@@ -360,15 +398,24 @@ export default function AdminApplicants() {
                           )}
                           {applicant.phone && (
                             <a
-                              href={generateWhatsAppUrl(applicant.phone, `Hi ${applicant.fullName.split(' ')[0]}, this is Traamand regarding your application.`)}
+                              href={generateWhatsAppUrl(applicant.phone, generateApplicantPipelineMessage(applicant))}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="rounded-lg border border-slate-200 p-1.5 text-green-500 hover:bg-green-50 transition"
-                              title="WhatsApp"
+                              title="WhatsApp applicant"
                             >
                               <MessageCircle className="h-3.5 w-3.5" />
                             </a>
                           )}
+                          <a
+                            href={generateWhatsAppUrl(WHATSAPP_NUMBERS.applications, generateApplicantAdminMessage(applicant))}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="rounded-lg border border-green-200 bg-green-50 p-1.5 text-green-600 hover:bg-green-100 transition"
+                            title="Send to applications WhatsApp"
+                          >
+                            <ShieldCheck className="h-3.5 w-3.5" />
+                          </a>
                         </div>
                         {NEXT_STAGES[applicant.status]?.length > 0 && (
                           <div className="mt-3 border-t border-slate-100 pt-3 flex flex-wrap gap-1.5">
@@ -666,12 +713,20 @@ export default function AdminApplicants() {
                       <Phone className="h-4 w-4" /> Call
                     </a>
                     <a
-                      href={generateWhatsAppUrl(applicant.phone, `Hi ${applicant.fullName.split(' ')[0]}, this is Traamand regarding your application.`)}
+                      href={generateWhatsAppUrl(applicant.phone, generateApplicantPipelineMessage(applicant))}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1.5 rounded-xl bg-green-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-green-700"
                     >
-                      <MessageCircle className="h-4 w-4" /> WhatsApp
+                      <MessageCircle className="h-4 w-4" /> DM Status Update
+                    </a>
+                    <a
+                      href={generateWhatsAppUrl(WHATSAPP_NUMBERS.applications, generateApplicantAdminMessage(applicant))}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-green-200 bg-green-50 px-4 py-2 text-sm font-medium text-green-700 transition hover:bg-green-100"
+                    >
+                      <ShieldCheck className="h-4 w-4" /> Send to Admin WhatsApp
                     </a>
                   </div>
                 )}
@@ -701,6 +756,24 @@ export default function AdminApplicants() {
                         </button>
                       )
                     })}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Interview Scheduling</p>
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <input
+                      type="datetime-local"
+                      value={interviewDate}
+                      onChange={(e) => setInterviewDate(e.target.value)}
+                      className="min-w-0 flex-1 rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
+                    />
+                    <button
+                      onClick={() => scheduleInterview(applicant)}
+                      className="rounded-xl bg-teal-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-teal-700"
+                    >
+                      Schedule Interview
+                    </button>
                   </div>
                 </div>
 

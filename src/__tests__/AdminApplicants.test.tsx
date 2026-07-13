@@ -45,6 +45,13 @@ vi.mock('../firebase/config', () => ({
 }))
 
 vi.mock('../lib/whatsapp', () => ({
+  WHATSAPP_NUMBERS: {
+    applications: '+263782329308',
+    bookings: '+263715325922',
+    general: '+263777566584',
+  },
+  generateApplicantAdminMessage: () => 'admin applicant message',
+  generateApplicantPipelineMessage: () => 'applicant status message',
   generateWhatsAppUrl: () => 'https://wa.me/263771234567',
 }))
 

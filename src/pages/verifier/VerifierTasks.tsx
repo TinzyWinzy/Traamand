@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
-  MapPin, DollarSign, Clock, CheckCircle, XCircle, Loader2,
-  ArrowLeft, ShieldCheck, User, Phone, Calendar,
+  MapPin, DollarSign, Clock, CheckCircle, Loader2,
+  ArrowLeft, ShieldCheck, User, Phone,
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import { useToastStore } from '../../stores/toastStore'
@@ -34,7 +34,7 @@ export default function VerifierTasks() {
     if (!authLoading && (!isAuthenticated || user?.role !== 'verifier')) {
       navigate('/sign-in')
     }
-  }, [authLoading, isAuthenticated, user?.role])
+  }, [authLoading, isAuthenticated, navigate, user?.role])
 
   useEffect(() => {
     if (!user?.id) return
@@ -52,7 +52,7 @@ export default function VerifierTasks() {
       addToast('Failed to load verifier tasks', 'error')
       setLoading(false)
     })
-  }, [user?.id])
+  }, [addToast, user?.id])
 
   const handleAccept = async (taskId: string) => {
     if (!user?.id) return

@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { Upload, FileJson, AlertCircle, CheckCircle2, X, Loader2, Download, RefreshCw } from 'lucide-react'
+import { Upload, FileJson, AlertCircle, X, Loader2, Download } from 'lucide-react'
 import { collection, writeBatch, doc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../../firebase/config'
 import { useToastStore } from '../../stores/toastStore'
@@ -56,7 +56,7 @@ export default function WorkerImportCSV({ onSuccess }: Props) {
     URL.revokeObjectURL(url)
   }
 
-  const validateRow = (row: Record<string, string>, rowNum: number): { valid: boolean; errors: Record<string, string> } => {
+  const validateRow = (row: Record<string, string>): { valid: boolean; errors: Record<string, string> } => {
     const errors: Record<string, string> = {}
 
     // Required fields
@@ -139,7 +139,7 @@ export default function WorkerImportCSV({ onSuccess }: Props) {
       const errors: ImportError[] = []
 
       rows.forEach((row, idx) => {
-        const { valid, errors: rowErrors } = validateRow(row, idx + 2)
+        const { valid, errors: rowErrors } = validateRow(row)
         if (valid) {
           validRows.push({ data: row, rowNum: idx + 2 })
         } else {

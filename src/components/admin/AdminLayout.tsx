@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Users, UserCircle, BookOpen, DollarSign,
-  Menu, X, LogOut, Shield, UserPlus, Smartphone, Clock,
-  CheckCircle, BarChart3, Video,
+  Menu, X, LogOut, Shield, UserPlus, Smartphone,
+  CheckCircle, Video,
 } from 'lucide-react'
 import { signOut } from 'firebase/auth'
 import { auth } from '../../firebase/config'

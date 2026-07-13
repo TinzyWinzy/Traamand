@@ -9,6 +9,7 @@ interface PaynowResponse {
   success: boolean
   redirectUrl?: string
   pollUrl?: string
+  reference?: string
   error?: string
 }
 
@@ -78,4 +79,28 @@ export async function pollPaymentStatus(pollUrl: string): Promise<{
   } catch {
     return { paid: false, status: 'error' }
   }
+}
+
+export async function initiateBookingPayment(
+  bookingId: string,
+  amount: number,
+  email: string
+): Promise<PaynowResponse> {
+  const { httpsCallable } = await import('firebase/functions')
+  const { functions } = await import('../firebase/config')
+  const fn = httpsCallable(functions, 'processPaynowPayment')
+  const result = await fn({ bookingId, amount, email })
+  return result.data as PaynowResponse
+}
+
+export async function pollBookingPayment(bookingId: string): Promise<{
+  paid: boolean
+  status: string
+  error?: string
+}> {
+  const { httpsCallable } = await import('firebase/functions')
+  const { functions } = await import('../firebase/config')
+  const fn = httpsCallable(functions, 'pollPaynowPayment')
+  const result = await fn({ bookingId })
+  return result.data as { paid: boolean; status: string; error?: string }
 }

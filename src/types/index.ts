@@ -121,6 +121,10 @@ export interface CheckInEntry {
 export interface Booking {
   id: string
   clientId: string
+  clientName: string
+  clientPhone: string
+  clientWhatsapp: string
+  clientEmail: string
   workerId: string
   serviceType: ServiceCategory
   workType: WorkType
@@ -131,14 +135,29 @@ export interface Booking {
   placementFee: number
   placementFeePaid: boolean
   paynowPollUrl: string
+  paynowReference: string
   paynowStatus: string
+  paynowPaidAt: Timestamp | null
   status: BookingStatus
   workerArrivedAt: Timestamp | null
+  checkInSchedule?: Record<string, Timestamp>
   clientCheckIn: Record<string, CheckInEntry>
   replacementRequested: boolean
   replacementReason: string
   createdAt: Timestamp
   updatedAt: Timestamp
+}
+
+export interface AuditLog {
+  id: string
+  entityType: 'booking' | 'applicant'
+  entityId: string
+  action: string
+  before: Record<string, unknown>
+  after: Record<string, unknown>
+  actorId: string
+  actorName: string
+  createdAt: Timestamp
 }
 
 export interface UserAddress {

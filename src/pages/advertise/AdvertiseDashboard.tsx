@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
-  TrendingUp, DollarSign, MousePointerClick, Eye, Target,
+  TrendingUp, MousePointerClick, Eye, Target,
   Loader2, ArrowLeft, Plus, BarChart3,
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
@@ -37,7 +37,7 @@ export default function AdvertiseDashboard() {
         setLoading(false)
       })
     }
-  }, [authLoading, user?.id])
+  }, [addToast, authLoading, isAuthenticated, navigate, user?.id])
 
   const handleCreate = async () => {
     if (!businessName.trim() || !description.trim() || !user?.id) return

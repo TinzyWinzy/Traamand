@@ -1,34 +1,36 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
   Search, Loader2, DollarSign, CheckCircle, Clock,
-  XCircle, ChevronDown,
+  ChevronDown,
 } from 'lucide-react'
-import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore'
+import { collection, getDocs, query, orderBy, limit, doc, updateDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../../../firebase/config'
 import { useToastStore } from '../../../stores/toastStore'
+import { useAuthStore } from '../../../stores/authStore'
 import type { Booking } from '../../../types'
 
 export default function AdminPayments() {
   const addToast = useToastStore((s) => s.addToast)
+  const { user } = useAuthStore()
   const [bookings, setBookings] = useState<Booking[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [filterPaid, setFilterPaid] = useState<string>('')
 
-  useEffect(() => {
-    fetchPayments()
-  }, [])
-
-  const fetchPayments = async () => {
+  const fetchPayments = useCallback(async () => {
     setLoading(true)
     try {
       const snap = await getDocs(query(collection(db, 'bookings'), orderBy('createdAt', 'desc'), limit(50)))
       setBookings(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Booking))
-    } catch (err) {
+    } catch {
       addToast('Failed to load payments', 'error')
     }
     setLoading(false)
-  }
+  }, [addToast])
+
+  useEffect(() => {
+    fetchPayments()
+  }, [fetchPayments])
 
   const formatDate = (ts: unknown) => {
     if (!ts) return '—'
@@ -51,6 +53,30 @@ export default function AdminPayments() {
       (filterPaid === 'pending' && !b.placementFeePaid)
     return matchesSearch && matchesPaid
   })
+
+  const markPaymentPaid = async (booking: Booking) => {
+    try {
+      await updateDoc(doc(db, 'bookings', booking.id), {
+        placementFeePaid: true,
+        paynowStatus: 'manual_paid',
+        paynowPaidAt: serverTimestamp(),
+        status: 'placement_fee_paid',
+        updatedBy: user?.id || 'admin',
+        updatedByName: user?.name || 'Admin',
+        updatedAt: serverTimestamp(),
+      })
+      setBookings((prev) =>
+        prev.map((b) =>
+          b.id === booking.id
+            ? { ...b, placementFeePaid: true, paynowStatus: 'manual_paid', status: 'placement_fee_paid' }
+            : b
+        )
+      )
+      addToast('Payment marked paid', 'success')
+    } catch {
+      addToast('Failed to mark payment paid', 'error')
+    }
+  }
 
   if (loading) {
     return (
@@ -126,6 +152,7 @@ export default function AdminPayments() {
                 <th className="px-5 py-3.5 font-bold text-slate-600">Fee</th>
                 <th className="px-5 py-3.5 font-bold text-slate-600">Status</th>
                 <th className="px-5 py-3.5 font-bold text-slate-600 hidden md:table-cell">Paynow</th>
+                <th className="px-5 py-3.5 font-bold text-slate-600">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -159,6 +186,18 @@ export default function AdminPayments() {
                   <td className="px-5 py-4 hidden md:table-cell">
                     {booking.paynowStatus ? (
                       <span className="text-xs text-slate-500">{booking.paynowStatus}</span>
+                    ) : (
+                      <span className="text-xs text-slate-300">—</span>
+                    )}
+                  </td>
+                  <td className="px-5 py-4">
+                    {!booking.placementFeePaid ? (
+                      <button
+                        onClick={() => markPaymentPaid(booking)}
+                        className="rounded-lg bg-emerald-100 px-3 py-1.5 text-xs font-bold text-emerald-700 transition hover:bg-emerald-200"
+                      >
+                        Mark Paid
+                      </button>
                     ) : (
                       <span className="text-xs text-slate-300">—</span>
                     )}

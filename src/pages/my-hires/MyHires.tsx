@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Calendar, Shield, Loader2, User } from 'lucide-react'
+import { Calendar, Shield, Loader2, User, MessageCircle } from 'lucide-react'
 import { getClientBookings } from '../../firebase/firestore'
 import { useAuthStore } from '../../stores/authStore'
 import { useToastStore } from '../../stores/toastStore'
+import { WHATSAPP_NUMBERS, generateSupportMessage, generateWhatsAppUrl } from '../../lib/whatsapp'
 import type { Booking } from '../../types'
 
 const STATUS_LABELS: Record<string, string> = {
@@ -46,7 +47,7 @@ export default function MyHires() {
     } else if (!authLoading) {
       setLoading(false)
     }
-  }, [user, authLoading])
+  }, [addToast, user, authLoading])
 
   if (authLoading || loading) {
     return (
@@ -127,6 +128,17 @@ export default function MyHires() {
                           <Shield className="h-4 w-4" />
                           ${booking.placementFee}
                         </span>
+                      </div>
+                      <div className="mt-4">
+                        <a
+                          href={generateWhatsAppUrl(WHATSAPP_NUMBERS.bookings, generateSupportMessage(booking.id))}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 rounded-xl bg-green-600 px-4 py-2 text-xs font-bold text-white transition hover:bg-green-700"
+                        >
+                          <MessageCircle className="h-4 w-4" />
+                          WhatsApp Booking Support
+                        </a>
                       </div>
                     </div>
                   ))}

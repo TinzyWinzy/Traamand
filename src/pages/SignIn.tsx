@@ -43,7 +43,10 @@ export default function SignIn() {
       })
       setUser(user)
       setFirebaseUser(fbUser)
-      if (role === 'admin') navigate('/admin')
+      const redirect = searchParams.get('redirect')
+      if (redirect?.startsWith('/') && !redirect.startsWith('//')) {
+        navigate(redirect)
+      } else if (role === 'admin') navigate('/admin')
       else if (role === 'verifier') navigate('/verifier')
       else if (role === 'creator') navigate('/creator')
       else if (role === 'sponsor') navigate('/sponsor')

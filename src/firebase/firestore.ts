@@ -15,7 +15,7 @@ import {
   type QueryConstraint,
 } from 'firebase/firestore'
 import { db } from './config'
-import type { Worker, Booking, User, UserRole, Category, LocationPage, Applicant, Transaction, Payout, PayoutMethod, TransactionType, VerifierTask, CreatorSubmission, Sponsorship, AdCampaign, Invite } from '../types'
+import type { Worker, Booking, User, UserRole, Category, LocationPage, Applicant, Transaction, Payout, VerifierTask, CreatorSubmission, Sponsorship, AdCampaign, Invite } from '../types'
 
 const workersCol = () => collection(db, 'workers')
 const bookingsCol = () => collection(db, 'bookings')
@@ -27,6 +27,12 @@ export async function getWorker(slug: string): Promise<Worker | null> {
   const snap = await getDocs(q)
   if (snap.empty) return null
   const docSnap = snap.docs[0]
+  return { id: docSnap.id, ...docSnap.data() } as Worker
+}
+
+export async function getWorkerById(workerId: string): Promise<Worker | null> {
+  const docSnap = await getDoc(doc(workersCol(), workerId))
+  if (!docSnap.exists()) return null
   return { id: docSnap.id, ...docSnap.data() } as Worker
 }
 

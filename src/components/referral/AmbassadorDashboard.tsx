@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  Users, TrendingUp, DollarSign, Award, ChevronRight,
+  Users, DollarSign, Award, ChevronRight,
   Loader2, Crown, Medal, Gift, Star, UserCheck,
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'

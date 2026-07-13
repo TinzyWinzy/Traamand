@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
   Search, Loader2, User, MapPin, DollarSign, Clock,
-  CheckCircle, XCircle, ShieldCheck, Phone,
+  ShieldCheck, Phone,
 } from 'lucide-react'
-import { collection, getDocs, query, orderBy, limit, doc, updateDoc, serverTimestamp } from 'firebase/firestore'
+import { collection, getDocs, query, orderBy, limit, doc, updateDoc } from 'firebase/firestore'
 import { db } from '../../../firebase/config'
 import { useToastStore } from '../../../stores/toastStore'
 import type { VerifierTask, User as UserType } from '../../../types'
@@ -18,11 +18,7 @@ export default function AdminVerifierTasks() {
   const [selectedTask, setSelectedTask] = useState<VerifierTask | null>(null)
   const [actionId, setActionId] = useState<string | null>(null)
 
-  useEffect(() => {
-    fetchData()
-  }, [])
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true)
     try {
       const [taskSnap, usersSnap] = await Promise.all([
@@ -37,7 +33,11 @@ export default function AdminVerifierTasks() {
       addToast('Failed to load verifier tasks', 'error')
     }
     setLoading(false)
-  }
+  }, [addToast])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
 
   const cancelTask = async (taskId: string) => {
     setActionId(taskId)

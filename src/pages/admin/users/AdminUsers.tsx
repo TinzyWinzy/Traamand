@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Search,
@@ -31,12 +31,7 @@ export default function AdminUsers() {
   const [inviteRole, setInviteRole] = useState<UserRole>('client')
   const [inviting, setInviting] = useState(false)
 
-  useEffect(() => {
-    if (!authLoading && (!isAuthenticated || currentUser?.role !== 'admin')) return
-    if (!authLoading && isAuthenticated) fetchData()
-  }, [authLoading, isAuthenticated])
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true)
     try {
       const [usersSnap, invitesData] = await Promise.all([
@@ -49,7 +44,12 @@ export default function AdminUsers() {
       addToast('Failed to load users', 'error')
     }
     setLoading(false)
-  }
+  }, [addToast])
+
+  useEffect(() => {
+    if (!authLoading && (!isAuthenticated || currentUser?.role !== 'admin')) return
+    if (!authLoading && isAuthenticated) fetchData()
+  }, [authLoading, currentUser?.role, fetchData, isAuthenticated])
 
   const updateRole = async (userId: string, role: UserRole) => {
     try {

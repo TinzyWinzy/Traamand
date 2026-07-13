@@ -1,11 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
   Search, Loader2, DollarSign, CheckCircle, XCircle,
-  Clock, Smartphone, Building2, Wifi, ArrowUpRight,
+  Clock, Smartphone, Building2, Wifi,
 } from 'lucide-react'
 import { collection, getDocs, query, orderBy, limit, doc, updateDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../../../firebase/config'
-import { useAuthStore } from '../../../stores/authStore'
 import { useToastStore } from '../../../stores/toastStore'
 import type { Payout, User as UserType } from '../../../types'
 
@@ -28,11 +27,7 @@ export default function AdminPayouts() {
   const [filterStatus, setFilterStatus] = useState<string>('')
   const [processingId, setProcessingId] = useState<string | null>(null)
 
-  useEffect(() => {
-    fetchData()
-  }, [])
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true)
     try {
       const [payoutSnap, usersSnap] = await Promise.all([
@@ -47,7 +42,11 @@ export default function AdminPayouts() {
       addToast('Failed to load payouts', 'error')
     }
     setLoading(false)
-  }
+  }, [addToast])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
 
   const updateStatus = async (payoutId: string, status: Payout['status']) => {
     setProcessingId(payoutId)
