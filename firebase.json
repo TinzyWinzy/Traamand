@@ -8,5 +8,14 @@
   },
   "functions": {
     "source": "functions"
+  },
+  "hosting": {
+    "public": "dist",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "rewrites": [
+      { "source": "/sitemap.xml", "function": "sitemap" },
+      { "source": "/prerender", "function": "prerender" },
+      { "source": "**", "destination": "/index.html" }
+    ]
   }
 }
