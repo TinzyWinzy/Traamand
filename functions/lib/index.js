@@ -33,11 +33,17 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.sendReplacementAlert = exports.processPaynowPayment = exports.updateLocationStats = exports.generateWorkerSEO = exports.scheduleCheckIns = exports.sendBookingConfirmation = exports.matchWorkerToBooking = exports.setUserRole = void 0;
+exports.onUserCreated = exports.onBookingCompleted = exports.onApplicantConverted = exports.sendReplacementAlert = exports.processPaynowPayment = exports.updateLocationStats = exports.generateWorkerSEO = exports.scheduleCheckIns = exports.sendBookingConfirmation = exports.matchWorkerToBooking = exports.prerender = exports.sitemap = exports.setUserRole = void 0;
 const admin = __importStar(require("firebase-admin"));
 const firestore_1 = require("firebase-functions/v2/firestore");
 const https_1 = require("firebase-functions/v2/https");
 const v2_1 = require("firebase-functions/v2");
+const rewards_1 = require("./rewards");
+const commission_1 = require("./commission");
+admin.initializeApp();
+const db = admin.firestore();
+const adminAuth = admin.auth();
+(0, v2_1.setGlobalOptions)({ region: 'us-central1' });
 exports.setUserRole = (0, https_1.onCall)(async (request) => {
     const uid = request.data.uid;
     const role = request.data.role;
@@ -49,10 +55,10 @@ exports.setUserRole = (0, https_1.onCall)(async (request) => {
     const user = await adminAuth.getUser(uid);
     return { success: true, uid, role, claims: user.customClaims };
 });
-admin.initializeApp();
-const db = admin.firestore();
-const adminAuth = admin.auth();
-(0, v2_1.setGlobalOptions)({ region: 'us-central1' });
+var sitemap_1 = require("./sitemap");
+Object.defineProperty(exports, "sitemap", { enumerable: true, get: function () { return sitemap_1.sitemap; } });
+var prerender_1 = require("./prerender");
+Object.defineProperty(exports, "prerender", { enumerable: true, get: function () { return prerender_1.prerender; } });
 exports.matchWorkerToBooking = (0, firestore_1.onDocumentCreated)('bookings/{bookingId}', async (event) => {
     const booking = event.data?.data();
     if (!booking)
@@ -223,4 +229,89 @@ exports.sendReplacementAlert = (0, firestore_1.onDocumentUpdated)({ document: 'b
     if (!before?.replacementRequested && after.replacementRequested) {
         // Replacement requested - business logic processed
     }
+});
+// ── Referral reward triggers ──
+exports.onApplicantConverted = (0, firestore_1.onDocumentUpdated)({ document: 'applicants/{applicantId}' }, async (event) => {
+    const before = event.data?.before.data();
+    const after = event.data?.after.data();
+    if (!before || !after)
+        return;
+    if (before.status === 'converted' || after.status !== 'converted')
+        return;
+    const userId = after.userId;
+    if (!userId)
+        return;
+    const userSnap = await db.collection('users').doc(userId).get();
+    if (!userSnap.exists)
+        return;
+    const userData = userSnap.data();
+    const referredBy = userData.referredBy;
+    if (!referredBy)
+        return;
+    const fullName = after.fullName;
+    const position = after.position;
+    const workerId = after.convertedWorkerId;
+    const reference = workerId || after.applicantId || event.params.applicantId;
+    const { referrerId, grandparentId, referrerTotalSignups } = await (0, rewards_1.resolveReferralChain)(referredBy);
+    if (referrerId) {
+        await (0, rewards_1.creditReferralBonus)(referrerId, reference, `Worker referral bonus: ${fullName} placed as ${position}`);
+        if ((0, commission_1.isReferralMilestoneReached)(referrerTotalSignups + 1)) {
+            await (0, rewards_1.creditCashback)(referrerId, referrerTotalSignups + 1, reference);
+        }
+    }
+    if (grandparentId) {
+        await (0, rewards_1.creditGrandparentBonus)(grandparentId, reference, `Grandparent bonus: ${fullName} placed (referred by ${userData.name || 'referrer'})`);
+    }
+});
+exports.onBookingCompleted = (0, firestore_1.onDocumentUpdated)({ document: 'bookings/{bookingId}' }, async (event) => {
+    const before = event.data?.before.data();
+    const after = event.data?.after.data();
+    if (!before || !after)
+        return;
+    const targetStatuses = ['placement_fee_paid', 'booked', 'completed'];
+    const oldStatus = before.status;
+    const newStatus = after.status;
+    if (oldStatus === newStatus || !targetStatuses.includes(newStatus))
+        return;
+    const clientId = after.clientId;
+    if (!clientId)
+        return;
+    const userSnap = await db.collection('users').doc(clientId).get();
+    if (!userSnap.exists)
+        return;
+    const userData = userSnap.data();
+    const referredBy = userData.referredBy;
+    if (!referredBy)
+        return;
+    const bookingId = event.params.bookingId;
+    const { referrerId, grandparentId, referrerTotalSignups } = await (0, rewards_1.resolveReferralChain)(referredBy);
+    if (referrerId) {
+        const serviceType = after.serviceType || 'worker';
+        await (0, rewards_1.creditPlacementBonus)(referrerId, bookingId, `Referral placement bonus: ${userData.name || 'A friend'} hired a ${serviceType}`);
+        if ((0, commission_1.isReferralMilestoneReached)(referrerTotalSignups + 1)) {
+            await (0, rewards_1.creditCashback)(referrerId, referrerTotalSignups + 1, bookingId);
+        }
+    }
+    if (grandparentId) {
+        await (0, rewards_1.creditGrandparentBonus)(grandparentId, bookingId, `Grandparent bonus: referred client hired a ${after.serviceType || 'worker'}`);
+    }
+});
+exports.onUserCreated = (0, firestore_1.onDocumentCreated)({ document: 'users/{userId}' }, async (event) => {
+    const userData = event.data?.data();
+    if (!userData)
+        return;
+    const referredBy = userData.referredBy;
+    if (!referredBy)
+        return;
+    const referrerSnap = await db.collection('users').where('referralCode', '==', referredBy).limit(1).get();
+    if (referrerSnap.empty)
+        return;
+    const referrerRef = referrerSnap.docs[0].ref;
+    const referrerData = referrerSnap.docs[0].data();
+    const currentClicks = referrerData.referralClicks || 0;
+    const currentSignups = referrerData.referralSignups || 0;
+    await referrerRef.update({
+        referralSignups: currentSignups + 1,
+        referralClicks: currentClicks + 1,
+    });
 });
