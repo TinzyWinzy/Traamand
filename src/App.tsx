@@ -18,7 +18,6 @@ import BookingFormPage from './pages/hire/BookingFormPage'
 import BookingConfirmation from './pages/hire/BookingConfirmation'
 import WorkerProfile from './pages/worker/WorkerProfile'
 import MyHires from './pages/my-hires/MyHires'
-import MyApplication from './pages/my-application/MyApplication'
 import MyReferrals from './pages/MyReferrals'
 import ReferralLandingPage from './pages/ReferralLandingPage'
 import VerifierTasks from './pages/verifier/VerifierTasks'
@@ -77,6 +76,33 @@ function ApplicantRoute({ children }: { children: React.ReactNode }) {
   )
 }
 
+function CreatorRoute({ children }: { children: React.ReactNode }) {
+  const navigate = useNavigate()
+  return (
+    <AuthGuard requireRole="creator" navigate={navigate}>
+      {children}
+    </AuthGuard>
+  )
+}
+
+function SponsorRoute({ children }: { children: React.ReactNode }) {
+  const navigate = useNavigate()
+  return (
+    <AuthGuard requireRole="sponsor" navigate={navigate}>
+      {children}
+    </AuthGuard>
+  )
+}
+
+function AdvertiseRoute({ children }: { children: React.ReactNode }) {
+  const navigate = useNavigate()
+  return (
+    <AuthGuard requireRole="advertise" navigate={navigate}>
+      {children}
+    </AuthGuard>
+  )
+}
+
 export default function App() {
   return (
     <ErrorBoundary>
@@ -109,25 +135,25 @@ export default function App() {
           <Route
             path="/creator"
             element={
-              <AuthRoute>
+              <CreatorRoute>
                 <CreatorDashboard />
-              </AuthRoute>
+              </CreatorRoute>
             }
           />
           <Route
             path="/sponsor"
             element={
-              <AuthRoute>
+              <SponsorRoute>
                 <SponsorDashboard />
-              </AuthRoute>
+              </SponsorRoute>
             }
           />
           <Route
             path="/advertise"
             element={
-              <AuthRoute>
+              <AdvertiseRoute>
                 <AdvertiseDashboard />
-              </AuthRoute>
+              </AdvertiseRoute>
             }
           />
           <Route path="/hire/:category" element={<WorkerList />} />
@@ -140,14 +166,6 @@ export default function App() {
               <AuthRoute>
                 <MyHires />
               </AuthRoute>
-            }
-          />
-          <Route
-            path="/my-application"
-            element={
-              <ApplicantRoute>
-                <MyApplication />
-              </ApplicantRoute>
             }
           />
           <Route
