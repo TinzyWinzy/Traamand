@@ -38,9 +38,22 @@ const admin = __importStar(require("firebase-admin"));
 const https_1 = require("firebase-functions/v2/https");
 function firestore() { return admin.firestore(); }
 const BASE_URL = 'https://traamand.co.zw';
+const STATIC_SEO_PAGES = [
+    { path: '/maids-in-harare', priority: '0.95', changefreq: 'weekly' },
+    { path: '/domestic-workers-harare', priority: '0.95', changefreq: 'weekly' },
+    { path: '/maid-jobs-harare', priority: '0.9', changefreq: 'weekly' },
+    { path: '/domestic-worker-jobs-harare', priority: '0.9', changefreq: 'weekly' },
+    { path: '/domestic-worker-jobs-zimbabwe', priority: '0.85', changefreq: 'weekly' },
+    { path: '/nanny-jobs-harare', priority: '0.8', changefreq: 'weekly' },
+    { path: '/chef-jobs-harare', priority: '0.75', changefreq: 'weekly' },
+    { path: '/gardener-jobs-harare', priority: '0.75', changefreq: 'weekly' },
+];
 async function generateSitemap() {
     const urls = [];
     urls.push(`  <url><loc>${BASE_URL}/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>`);
+    STATIC_SEO_PAGES.forEach((page) => {
+        urls.push(`  <url><loc>${BASE_URL}${page.path}</loc><changefreq>${page.changefreq}</changefreq><priority>${page.priority}</priority></url>`);
+    });
     const categoriesSnap = await firestore().collection('categories').orderBy('sortOrder', 'asc').get();
     categoriesSnap.docs.forEach((doc) => {
         const cat = doc.data();

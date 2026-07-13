@@ -26,7 +26,10 @@ import {
 import { CATEGORIES, COMPANY_NAME, PRIMARY_PHONE, type CategoryMeta } from '../../lib/constants'
 import type { Worker } from '../../types'
 import SEOHead from '../../components/seo/SEOHead'
-import { generateOrganizationStructuredData } from '../../lib/structuredData'
+import {
+  generateHiringWebsiteStructuredData,
+  generateOrganizationStructuredData,
+} from '../../lib/structuredData'
 import { getAvailableWorkers } from '../../firebase/firestore'
 
 const ICON_MAP: Record<string, React.FC<{ className?: string }>> = {
@@ -106,6 +109,29 @@ const STEPS = [
   },
 ]
 
+const SEO_AREAS = [
+  'Borrowdale',
+  'Avondale',
+  'Mt Pleasant',
+  'Greendale',
+  'Highlands',
+  'Mabelreign',
+  'Hatfield',
+  'Eastlea',
+]
+
+const SEARCH_INTENTS = [
+  'maids in Harare',
+  'maids near me',
+  'domestic workers in Harare',
+  'housekeepers in Harare',
+  'nannies in Harare',
+  'chefs in Harare',
+  'gardeners in Harare',
+  'nurse aides in Harare',
+  'drivers in Harare',
+]
+
 export default function HomePage() {
   const [workerCounts, setWorkerCounts] = useState<Record<string, number>>({})
   const [totalAvailable, setTotalAvailable] = useState(0)
@@ -132,10 +158,11 @@ export default function HomePage() {
   return (
     <>
       <SEOHead
-        title="Traamand Employment Services | Verified Domestic Workers in Harare"
-        description="Hire vetted, background-screened domestic workers in Harare, Zimbabwe. Maids, nannies, chefs, gardeners — book in 3 taps with the Divine Seal guarantee."
+        title="Maids in Harare Near Me | Traamand Employment Services"
+        description="Find verified maids, nannies, chefs, gardeners, nurse aides, drivers, sales ladies, and bar ladies in Harare, Zimbabwe. Traamand vets domestic workers and helps families book quickly."
         canonical="https://traamand.co.zw"
-        structuredData={generateOrganizationStructuredData()}
+        keywords={SEARCH_INTENTS}
+        structuredData={[generateOrganizationStructuredData(), generateHiringWebsiteStructuredData()]}
       />
       {/*  HERO  */}
       <section className="relative overflow-hidden bg-gradient-to-br from-brand-navy via-brand-navy-light to-brand-teal-dark">
@@ -164,6 +191,12 @@ export default function HomePage() {
               {COMPANY_NAME} connects you with document-verified, background-screened maids, nannies,
               chefs, gardeners, and more. Every worker is Divine Seal verified — ID checked, police
               cleared, and reference confirmed. Hire in 3 minutes or less.
+            </p>
+
+            <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-white/75">
+              Searching for maids near me, domestic workers in Harare, nannies, housekeepers, chefs,
+              gardeners, nurse aides, drivers, sales ladies, or bar ladies? Traamand serves families
+              across Harare with verified staff ready for interviews and bookings.
             </p>
 
             <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
@@ -195,6 +228,33 @@ export default function HomePage() {
               <span className="flex items-center gap-1">
                 <Shield className="h-4 w-4 text-green-400" /> Divine Seal Guarantee
               </span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="border-y border-slate-200 bg-white py-10">
+        <div className="mx-auto grid max-w-7xl gap-8 px-4 sm:px-6 lg:grid-cols-[1.2fr_0.8fr] lg:px-8">
+          <div>
+            <h2 className="text-2xl font-extrabold tracking-tight text-slate-900">
+              Maids and Domestic Workers Near You in Harare
+            </h2>
+            <p className="mt-3 text-sm leading-7 text-slate-600">
+              Traamand helps households find verified maids, housekeepers, nannies, chefs,
+              gardeners, nurse aides, drivers, sales ladies, and bar ladies in Harare. We support
+              clients searching for domestic help near me, maid services in Harare, nanny services,
+              part-time housekeepers, live-in maids, and trusted household staff with checks before
+              placement.
+            </p>
+          </div>
+          <div>
+            <h3 className="text-sm font-bold uppercase tracking-wide text-slate-500">Service areas</h3>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {SEO_AREAS.map((area) => (
+                <span key={area} className="rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-700">
+                  {area}
+                </span>
+              ))}
             </div>
           </div>
         </div>

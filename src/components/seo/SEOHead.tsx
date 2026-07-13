@@ -6,7 +6,8 @@ interface SEOProps {
   canonical?: string
   ogImage?: string
   ogType?: 'website' | 'article' | 'profile'
-  structuredData?: Record<string, unknown>
+  structuredData?: Record<string, unknown> | Record<string, unknown>[]
+  keywords?: string[]
   noIndex?: boolean
 }
 
@@ -17,6 +18,7 @@ export default function SEOHead({
   ogImage = 'https://traamand.co.zw/logo.png',
   ogType = 'website',
   structuredData,
+  keywords,
   noIndex,
 }: SEOProps) {
   const fullTitle = title.includes('Traamand') ? title : `${title} | Traamand`
@@ -26,6 +28,7 @@ export default function SEOHead({
     <Helmet>
       <title>{fullTitle}</title>
       <meta name="description" content={description} />
+      {keywords?.length ? <meta name="keywords" content={keywords.join(', ')} /> : null}
       <meta property="og:title" content={fullTitle} />
       <meta property="og:description" content={description} />
       <meta property="og:type" content={ogType} />
@@ -38,9 +41,7 @@ export default function SEOHead({
       {canonical && <link rel="canonical" href={canonical} />}
       {canonical && <meta property="og:url" content={canonical} />}
       {noIndex && <meta name="robots" content="noindex, nofollow" />}
-      {structuredData && (
-        <script type="application/ld+json">{JSON.stringify(structuredData)}</script>
-      )}
+      {structuredData && <script type="application/ld+json">{JSON.stringify(structuredData)}</script>}
     </Helmet>
   )
 }

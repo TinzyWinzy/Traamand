@@ -84,16 +84,60 @@ export function generateOrganizationStructuredData(): Record<string, unknown> {
   return {
     '@context': 'https://schema.org',
     '@type': 'LocalBusiness',
+    '@id': 'https://traamand.co.zw/#organization',
     name: 'Traamand Employment Services',
+    alternateName: ['Traamand', 'Traamand Zimbabwe', 'Traamand Harare'],
     description:
-      'Trusted domestic worker placement in Harare, Zimbabwe. Verified maids, nannies, chefs, gardeners, and more.',
+      'Trusted employment agency in Harare, Zimbabwe for verified maids, nannies, chefs, gardeners, nurse aides, drivers, sales ladies, bar ladies, and domestic worker jobs.',
     telephone: '+263 715 325 922',
+    email: 'tmandovha@gmail.com',
+    image: 'https://traamand.co.zw/logo.png',
+    priceRange: '$$',
     address: {
       '@type': 'PostalAddress',
       streetAddress: 'Corner Jaison Mbuya Nehanda Street & Central Avenue, Azhari Building, Room 4A',
       addressLocality: 'Harare',
+      addressRegion: 'Harare',
       addressCountry: 'ZW',
     },
+    areaServed: [
+      'Harare',
+      'Borrowdale',
+      'Avondale',
+      'Mt Pleasant',
+      'Greendale',
+      'Highlands',
+      'Mabelreign',
+      'Hatfield',
+      'Zimbabwe',
+    ],
+    knowsAbout: [
+      'maids in Harare',
+      'domestic workers in Harare',
+      'nannies in Harare',
+      'housekeepers in Harare',
+      'domestic worker jobs in Zimbabwe',
+      'maid jobs in Harare',
+      'nanny jobs in Harare',
+    ],
+    makesOffer: [
+      'Maid placement',
+      'Nanny placement',
+      'Chef placement',
+      'Gardener placement',
+      'Nurse aide placement',
+      'Driver placement',
+      'Sales lady placement',
+      'Bar lady placement',
+      'Domestic worker recruitment',
+    ].map((name) => ({
+      '@type': 'Offer',
+      itemOffered: {
+        '@type': 'Service',
+        name,
+        areaServed: 'Harare, Zimbabwe',
+      },
+    })),
     openingHoursSpecification: {
       '@type': 'OpeningHoursSpecification',
       dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
@@ -102,5 +146,43 @@ export function generateOrganizationStructuredData(): Record<string, unknown> {
     },
     url: 'https://traamand.co.zw',
     sameAs: [],
+  }
+}
+
+export function generateHiringWebsiteStructuredData(): Record<string, unknown> {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    '@id': 'https://traamand.co.zw/#website',
+    name: 'Traamand',
+    url: 'https://traamand.co.zw',
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: 'https://traamand.co.zw/hire/{search_term_string}',
+      'query-input': 'required name=search_term_string',
+    },
+  }
+}
+
+export function generateJobsPageStructuredData(): Record<string, unknown> {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: 'Domestic Worker Jobs in Harare and Zimbabwe | Traamand',
+    description:
+      'Apply for maid, nanny, chef, gardener, nurse aide, driver, sales lady, and bar lady jobs through Traamand Employment Services in Harare, Zimbabwe.',
+    url: 'https://traamand.co.zw/join-our-team',
+    about: [
+      'maid jobs in Harare',
+      'domestic worker jobs in Zimbabwe',
+      'nanny jobs in Harare',
+      'chef jobs in Harare',
+      'gardener jobs in Harare',
+      'nurse aide jobs in Harare',
+      'driver jobs in Harare',
+    ],
+    isPartOf: {
+      '@id': 'https://traamand.co.zw/#website',
+    },
   }
 }
