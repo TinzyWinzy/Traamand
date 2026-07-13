@@ -50,6 +50,14 @@
         { "fieldPath": "city", "order": "ASCENDING" },
         { "fieldPath": "serviceType", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "invites",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "email", "order": "ASCENDING" },
+        { "fieldPath": "accepted", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

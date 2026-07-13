@@ -29,20 +29,23 @@ export async function createOrUpdateUser(
     ? (data.phone.startsWith('+') ? data.phone : `+263${data.phone.replace(/^0/, '')}`)
     : ''
 
+  const referredBy = typeof window !== 'undefined' ? sessionStorage.getItem('traamand_ref') || '' : ''
+  const invite = await getInviteByEmail(firebaseUser.email || data.email || '')
+
   if (userSnap.exists()) {
-    const existing = userSnap.data()
-    await setDoc(userRef, {
+    const existing = userSnap.data() as any
+    const updates: Record<string, unknown> = {
       name: data.name || existing.name,
       email: data.email || existing.email || firebaseUser.email || '',
       whatsappNumber: whatsappNumber || existing.whatsappNumber || '',
       updatedAt: serverTimestamp(),
-    }, { merge: true })
-    return { id: firebaseUser.uid, ...existing } as unknown as User
+    }
+    if (invite && invite.role) {
+      updates.role = invite.role
+    }
+    await setDoc(userRef, updates, { merge: true })
+    return { ...existing, id: firebaseUser.uid } as User
   }
-
-  const referredBy = typeof window !== 'undefined' ? sessionStorage.getItem('traamand_ref') || '' : ''
-
-  const invite = await getInviteByEmail(firebaseUser.email || data.email || '')
 
   const newUser = {
     name: data.name,

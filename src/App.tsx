@@ -37,6 +37,7 @@ import AdminUsers from './pages/admin/users/AdminUsers'
 import AdminPayouts from './pages/admin/payouts/AdminPayouts'
 import AdminCreatorSubmissions from './pages/admin/content/AdminCreatorSubmissions'
 import AdminVerifierTasks from './pages/admin/tasks/AdminVerifierTasks'
+import AdminSignIn from './pages/admin/AdminSignIn'
 
 function AuthRoute({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate()
@@ -136,6 +137,7 @@ export default function App() {
               </AuthRoute>
             }
           />
+          <Route path="/admin/sign-in" element={<AdminSignIn />} />
           <Route
             path="/admin"
             element={

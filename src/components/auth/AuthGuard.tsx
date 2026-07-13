@@ -16,8 +16,10 @@ export function AuthGuard({ children, requireRole, navigate }: AuthGuardProps) {
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       navigate('/sign-in')
+    } else if (!isLoading && isAuthenticated && requireRole && user?.role !== requireRole) {
+      navigate('/')
     }
-  }, [isLoading, isAuthenticated, navigate])
+  }, [isLoading, isAuthenticated, requireRole, user?.role, navigate])
 
   if (isLoading) return null
 
@@ -37,7 +39,7 @@ export function AuthListener() {
         setFirebaseUser(fbUser)
         let userData = await getUserData(fbUser.uid)
         if (!userData) {
-          await new Promise((r) => setTimeout(r, 400))
+          await new Promise((r) => setTimeout(r, 600))
           userData = await getUserData(fbUser.uid)
         }
         if (userData) {
