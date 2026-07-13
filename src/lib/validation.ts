@@ -1,9 +1,13 @@
 import { z } from 'zod'
 
 export const phoneSchema = z
-  .string()
-  .min(1, 'Phone number is required')
-  .regex(/^(?:\+263|0)\d{9}$/, 'Enter a valid Zimbabwe phone number')
+  .preprocess(
+    (value) => (typeof value === 'string' ? value.replace(/[\s()-]/g, '') : value),
+    z
+      .string()
+      .min(1, 'Phone number is required')
+      .regex(/^(?:\+263|0)\d{9}$/, 'Enter a valid Zimbabwe phone number')
+  )
 
 export const clientInfoSchema = z.object({
   fullName: z.string().min(2, 'Full name is required'),

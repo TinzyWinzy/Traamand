@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link, useLocation } from 'react-router-dom'
-import { useForm, Controller } from 'react-hook-form'
+import { useForm, Controller, type FieldErrors } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
   Calendar,
@@ -97,11 +97,14 @@ export default function BookingFormPage() {
 
   useEffect(() => {
     if (!user) return
-    setValue('clientName', user.name || '', { shouldValidate: false })
-    setValue('clientPhone', user.phone || user.whatsappNumber || '', { shouldValidate: false })
-    setValue('clientWhatsapp', user.whatsappNumber || user.phone || '', { shouldValidate: false })
-    setValue('clientEmail', user.email || '', { shouldValidate: false })
-  }, [setValue, user])
+    const current = getValues()
+    const phone = user.phone || user.whatsappNumber || ''
+    const whatsapp = user.whatsappNumber || user.phone || ''
+    setValue('clientName', current.clientName || user.name || '', { shouldValidate: false })
+    setValue('clientPhone', current.clientPhone || phone, { shouldValidate: false })
+    setValue('clientWhatsapp', current.clientWhatsapp || whatsapp, { shouldValidate: false })
+    setValue('clientEmail', current.clientEmail || user.email || '', { shouldValidate: false })
+  }, [getValues, setValue, user])
 
   const stepFields: Record<Step, (keyof BookingFormSchema)[]> = {
     1: ['workType', 'startDate'],
@@ -117,13 +120,32 @@ export default function BookingFormPage() {
 
   const handleBack = () => setStep((s) => Math.max(s - 1, 1) as Step)
 
+  const handleInvalid = (formErrors: FieldErrors<BookingFormSchema>) => {
+    const errorFields = Object.keys(formErrors) as (keyof BookingFormSchema)[]
+    const nextStep =
+      errorFields.find((field) => stepFields[1].includes(field))
+        ? 1
+        : errorFields.find((field) => stepFields[2].includes(field))
+          ? 2
+          : step
+
+    setStep(nextStep)
+    const firstError = errorFields
+      .map((field) => formErrors[field]?.message)
+      .find((message): message is string => typeof message === 'string')
+    addToast(firstError || 'Please check the highlighted booking details.', 'error')
+  }
+
   const watchStartDate = watch('startDate')
   const watchWorkType = watch('workType')
   const watchStreet = watch('street')
   const watchSuburb = watch('suburb')
 
   const onSubmit = async (data: BookingFormSchema) => {
-    if (!worker) return
+    if (!worker) {
+      addToast('Worker profile is still loading. Please try again.', 'error')
+      return
+    }
     if (!isAuthenticated || !user) {
       if (slug) {
         sessionStorage.setItem(`traamand_booking_${slug}`, JSON.stringify(getValues()))
@@ -282,7 +304,7 @@ export default function BookingFormPage() {
           </div>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)}>
+        <form onSubmit={handleSubmit(onSubmit, handleInvalid)}>
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
             {/* Step 1: Schedule */}
             {step === 1 && (
