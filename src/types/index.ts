@@ -248,6 +248,8 @@ export interface Applicant {
   primaryLanguage: string
   nationalIdUrl: string
   policeClearanceUrl: string
+  documentUploadStatus?: 'pending' | 'uploaded' | 'failed'
+  documentUploadError?: string
   status: ApplicantStatus
   notes: string
   reviewedBy: string

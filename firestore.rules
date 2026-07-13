@@ -49,7 +49,20 @@ service cloud.firestore {
 
     match /applicants/{applicantId} {
       allow create: if true;
-      allow read, update: if isAdminOrVerifier();
+      allow read: if isAdminOrVerifier()
+        || (request.auth != null
+          && (resource.data.userId == request.auth.uid || resource.data.userId == ''));
+      allow update: if isAdminOrVerifier()
+        || (request.auth != null
+          && resource.data.userId == ''
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['userId', 'updatedAt']))
+        || request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'nationalIdUrl',
+          'policeClearanceUrl',
+          'documentUploadStatus',
+          'documentUploadError',
+          'updatedAt',
+        ]);
       allow delete: if isAdmin();
 
       match /verifications/{verificationId} {

@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
-  Search, Loader2, DollarSign, CheckCircle, Clock,
+  Search, Loader2, DollarSign, CheckCircle, Clock, RefreshCw, XCircle,
   ChevronDown,
 } from 'lucide-react'
 import { collection, getDocs, query, orderBy, limit, doc, updateDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../../../firebase/config'
 import { useToastStore } from '../../../stores/toastStore'
 import { useAuthStore } from '../../../stores/authStore'
+import { pollBookingPayment } from '../../../lib/paynow'
 import type { Booking } from '../../../types'
 
 export default function AdminPayments() {
@@ -14,6 +15,7 @@ export default function AdminPayments() {
   const { user } = useAuthStore()
   const [bookings, setBookings] = useState<Booking[]>([])
   const [loading, setLoading] = useState(true)
+  const [busyBookingId, setBusyBookingId] = useState('')
   const [search, setSearch] = useState('')
   const [filterPaid, setFilterPaid] = useState<string>('')
 
@@ -46,7 +48,10 @@ export default function AdminPayments() {
   const filtered = paidBookings.filter((b) => {
     const matchesSearch =
       b.serviceType?.toLowerCase().includes(search.toLowerCase()) ||
-      b.id?.toLowerCase().includes(search.toLowerCase())
+      b.id?.toLowerCase().includes(search.toLowerCase()) ||
+      b.clientName?.toLowerCase().includes(search.toLowerCase()) ||
+      b.clientPhone?.includes(search) ||
+      b.paynowReference?.toLowerCase().includes(search.toLowerCase())
     const matchesPaid =
       !filterPaid ||
       (filterPaid === 'paid' && b.placementFeePaid) ||
@@ -55,6 +60,7 @@ export default function AdminPayments() {
   })
 
   const markPaymentPaid = async (booking: Booking) => {
+    setBusyBookingId(booking.id)
     try {
       await updateDoc(doc(db, 'bookings', booking.id), {
         placementFeePaid: true,
@@ -76,6 +82,45 @@ export default function AdminPayments() {
     } catch {
       addToast('Failed to mark payment paid', 'error')
     }
+    setBusyBookingId('')
+  }
+
+  const markPaymentPending = async (booking: Booking) => {
+    setBusyBookingId(booking.id)
+    try {
+      await updateDoc(doc(db, 'bookings', booking.id), {
+        placementFeePaid: false,
+        paynowStatus: 'manual_pending',
+        paynowPaidAt: null,
+        status: booking.status === 'placement_fee_paid' ? 'matched' : booking.status,
+        updatedBy: user?.id || 'admin',
+        updatedByName: user?.name || 'Admin',
+        updatedAt: serverTimestamp(),
+      })
+      setBookings((prev) =>
+        prev.map((b) =>
+          b.id === booking.id
+            ? { ...b, placementFeePaid: false, paynowStatus: 'manual_pending', paynowPaidAt: null }
+            : b
+        )
+      )
+      addToast('Payment moved back to pending', 'success')
+    } catch {
+      addToast('Failed to update payment', 'error')
+    }
+    setBusyBookingId('')
+  }
+
+  const checkPaynowStatus = async (booking: Booking) => {
+    setBusyBookingId(booking.id)
+    try {
+      const result = await pollBookingPayment(booking.id)
+      await fetchPayments()
+      addToast(result.paid ? 'Paynow payment confirmed' : `Paynow status: ${result.status}`, result.paid ? 'success' : 'info')
+    } catch {
+      addToast('Failed to check Paynow status', 'error')
+    }
+    setBusyBookingId('')
   }
 
   if (loading) {
@@ -124,7 +169,7 @@ export default function AdminPayments() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by service or booking ID..."
+            placeholder="Search by service, booking ID, client, phone, or Paynow ref..."
             className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
           />
         </div>
@@ -162,6 +207,9 @@ export default function AdminPayments() {
                     <div>
                       <p className="font-bold text-slate-900">{booking.serviceType || 'N/A'}</p>
                       <p className="text-xs text-slate-400">#{booking.id?.slice(0, 8)}</p>
+                      {booking.clientName && (
+                        <p className="mt-0.5 text-xs text-slate-500">{booking.clientName}</p>
+                      )}
                     </div>
                   </td>
                   <td className="px-5 py-4 hidden sm:table-cell text-slate-500">
@@ -185,22 +233,48 @@ export default function AdminPayments() {
                   </td>
                   <td className="px-5 py-4 hidden md:table-cell">
                     {booking.paynowStatus ? (
-                      <span className="text-xs text-slate-500">{booking.paynowStatus}</span>
+                      <div>
+                        <span className="text-xs text-slate-500">{booking.paynowStatus}</span>
+                        {booking.paynowReference && (
+                          <p className="mt-0.5 font-mono text-[10px] text-slate-400">{booking.paynowReference}</p>
+                        )}
+                      </div>
                     ) : (
                       <span className="text-xs text-slate-300">—</span>
                     )}
                   </td>
                   <td className="px-5 py-4">
-                    {!booking.placementFeePaid ? (
-                      <button
-                        onClick={() => markPaymentPaid(booking)}
-                        className="rounded-lg bg-emerald-100 px-3 py-1.5 text-xs font-bold text-emerald-700 transition hover:bg-emerald-200"
-                      >
-                        Mark Paid
-                      </button>
-                    ) : (
-                      <span className="text-xs text-slate-300">—</span>
-                    )}
+                    <div className="flex flex-wrap gap-1.5">
+                      {booking.paynowPollUrl && !booking.placementFeePaid && (
+                        <button
+                          onClick={() => checkPaynowStatus(booking)}
+                          disabled={busyBookingId === booking.id}
+                          className="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-700 transition hover:bg-blue-100 disabled:opacity-50"
+                        >
+                          {busyBookingId === booking.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                          Check
+                        </button>
+                      )}
+                      {!booking.placementFeePaid ? (
+                        <button
+                          onClick={() => markPaymentPaid(booking)}
+                          disabled={busyBookingId === booking.id}
+                          className="inline-flex items-center gap-1 rounded-lg bg-emerald-100 px-2.5 py-1.5 text-xs font-bold text-emerald-700 transition hover:bg-emerald-200 disabled:opacity-50"
+                        >
+                          <CheckCircle className="h-3 w-3" />
+                          Mark Paid
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => markPaymentPending(booking)}
+                          disabled={busyBookingId === booking.id}
+                          className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-bold text-slate-600 transition hover:bg-slate-200 disabled:opacity-50"
+                        >
+                          <XCircle className="h-3 w-3" />
+                          Mark Pending
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}

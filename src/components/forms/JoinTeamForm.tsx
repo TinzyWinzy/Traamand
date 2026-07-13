@@ -79,6 +79,7 @@ export default function JoinTeamForm() {
     if (!validate()) return
     setUploading(true)
     setSubmitError('')
+    let createdApplicantId = ''
 
     try {
       const applicantId = await createApplicant({
@@ -92,6 +93,8 @@ export default function JoinTeamForm() {
         primaryLanguage: data.primaryLanguage,
         nationalIdUrl: nationalIdFile?.name || '',
         policeClearanceUrl: policeClearanceFile?.name || '',
+        documentUploadStatus: 'pending',
+        documentUploadError: '',
         status: 'new',
         notes: '',
         reviewedBy: '',
@@ -102,26 +105,34 @@ export default function JoinTeamForm() {
         source: 'join_team_form',
         userId: user?.id || '',
       })
+      createdApplicantId = applicantId
 
       if (user?.id && user.role === 'client') {
         await updateDoc(doc(db, 'users', user.id), { role: 'applicant' })
       }
 
       setApplicantRef(applicantId)
-      setSubmitted(true)
+      const [nationalIdUrl, policeClearanceUrl] = await Promise.all([
+        uploadApplicantFile(nationalIdFile!, applicantId, 'nationalId'),
+        uploadApplicantFile(policeClearanceFile!, applicantId, 'policeClearance'),
+      ])
 
-      if (nationalIdFile) {
-        uploadApplicantFile(nationalIdFile, applicantId, 'nationalId').then((url) => {
-          updateApplicant(applicantId, { nationalIdUrl: url })
-        })
-      }
-      if (policeClearanceFile) {
-        uploadApplicantFile(policeClearanceFile, applicantId, 'policeClearance').then((url) => {
-          updateApplicant(applicantId, { policeClearanceUrl: url })
-        })
-      }
+      await updateApplicant(applicantId, {
+        nationalIdUrl,
+        policeClearanceUrl,
+        documentUploadStatus: 'uploaded',
+        documentUploadError: '',
+      })
+
+      setSubmitted(true)
     } catch (err) {
       console.error('Failed to save applicant:', err)
+      if (createdApplicantId) {
+        updateApplicant(createdApplicantId, {
+          documentUploadStatus: 'failed',
+          documentUploadError: (err as Error).message,
+        }).catch(() => {})
+      }
       setSubmitError('Something went wrong. Please try again or contact us on WhatsApp.')
     }
 

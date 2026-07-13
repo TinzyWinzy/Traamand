@@ -3,6 +3,11 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 
 vi.mock('../firebase/firestore', () => ({
   createApplicant: vi.fn().mockResolvedValue('mock-applicant-id'),
+  updateApplicant: vi.fn().mockResolvedValue(undefined),
+}))
+
+vi.mock('../lib/upload', () => ({
+  uploadApplicantFile: vi.fn().mockResolvedValue('https://storage.example/applicant-file.pdf'),
 }))
 
 describe('JoinTeamForm', () => {

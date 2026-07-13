@@ -422,7 +422,13 @@ export default function AdminApplicants() {
                             {NEXT_STAGES[applicant.status].map((nextStatus) => (
                               <button
                                 key={nextStatus}
-                                onClick={() => updateStatus(applicant.id, nextStatus)}
+                                onClick={() => {
+                                  if (nextStatus === 'converted') {
+                                    convertToWorker(applicant)
+                                  } else {
+                                    updateStatus(applicant.id, nextStatus)
+                                  }
+                                }}
                                 className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition ${
                                   nextStatus === 'rejected'
                                     ? 'text-red-600 hover:bg-red-50 border border-red-200'
@@ -735,9 +741,9 @@ export default function AdminApplicants() {
                 <div>
                   <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Pipeline Actions</p>
                   <div className="flex flex-wrap gap-2">
-                    {PIPELINE_STAGES.map((stage) => {
+                    {PIPELINE_STAGES.filter((stage) => stage.status !== 'converted').map((stage) => {
                       const isCurrent = applicant.status === stage.status
-                      const isDisabled = isCurrent || (applicant.status === 'converted' && stage.status !== 'converted')
+                      const isDisabled = isCurrent || applicant.status === 'converted'
                       return (
                         <button
                           key={stage.status}

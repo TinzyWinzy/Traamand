@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.onUserCreated = exports.onBookingCompleted = exports.onApplicantConverted = exports.sendReplacementAlert = exports.onApplicantAudit = exports.onBookingAuditAndAvailability = exports.pollPaynowPayment = exports.processPaynowPayment = exports.updateLocationStats = exports.generateWorkerSEO = exports.scheduleCheckIns = exports.sendBookingConfirmation = exports.matchWorkerToBooking = exports.prerender = exports.sitemap = exports.setUserRole = void 0;
+exports.onUserCreated = exports.onBookingCompleted = exports.onApplicantConverted = exports.sendReplacementAlert = exports.onApplicantAudit = exports.onBookingAuditAndAvailability = exports.paynowCallback = exports.pollPaynowPayment = exports.processPaynowPayment = exports.updateLocationStats = exports.generateWorkerSEO = exports.scheduleCheckIns = exports.sendBookingConfirmation = exports.matchWorkerToBooking = exports.prerender = exports.sitemap = exports.setUserRole = void 0;
 const admin = __importStar(require("firebase-admin"));
 const firestore_1 = require("firebase-functions/v2/firestore");
 const https_1 = require("firebase-functions/v2/https");
@@ -45,6 +45,32 @@ const db = admin.firestore();
 const adminAuth = admin.auth();
 (0, v2_1.setGlobalOptions)({ region: 'us-central1' });
 const ACTIVE_BOOKING_STATUSES = ['inquiry', 'matched', 'booked', 'placement_fee_paid', 'worker_assigned', 'started'];
+function getFunctionBaseUrl() {
+    return (process.env.FUNCTIONS_URL ||
+        'https://us-central1-studio-8895863664-52c12.cloudfunctions.net');
+}
+function getSiteUrl() {
+    return process.env.SITE_URL || 'https://www.traamand.co.zw';
+}
+function getPaynowParam(params, key) {
+    return params.get(key) || params.get(key.toLowerCase()) || params.get(key.toUpperCase()) || '';
+}
+async function writePlacementFeeTransaction(bookingId, booking) {
+    const txnRef = db.collection('transactions').doc(`placement_fee_${bookingId}`);
+    const txnSnap = await txnRef.get();
+    if (txnSnap.exists)
+        return;
+    await txnRef.set({
+        userId: booking.clientId,
+        type: 'placement_fee',
+        amount: booking.placementFee || 0,
+        balance: 0,
+        reference: bookingId,
+        description: `Placement fee paid for booking ${bookingId.slice(0, 8)}`,
+        status: 'completed',
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+}
 function changedFields(before, after) {
     const beforeChanges = {};
     const afterChanges = {};
@@ -271,20 +297,48 @@ exports.updateLocationStats = (0, firestore_1.onDocumentUpdated)({ document: 'wo
     }
 });
 exports.processPaynowPayment = (0, https_1.onCall)(async (request) => {
-    const { bookingId, amount, email } = request.data;
+    const { bookingId, email } = request.data;
+    if (!request.auth?.uid)
+        throw new https_1.HttpsError('unauthenticated', 'Sign in to pay for this booking.');
+    if (!bookingId)
+        throw new https_1.HttpsError('invalid-argument', 'Missing bookingId');
     const bookingRef = db.collection('bookings').doc(bookingId);
     const bookingSnap = await bookingRef.get();
     if (!bookingSnap.exists) {
-        throw new Error('Booking not found');
+        throw new https_1.HttpsError('not-found', 'Booking not found');
+    }
+    const booking = bookingSnap.data();
+    const userSnap = await db.collection('users').doc(request.auth.uid).get();
+    const isAdmin = userSnap.data()?.role === 'admin';
+    if (booking.clientId !== request.auth.uid && !isAdmin) {
+        throw new https_1.HttpsError('permission-denied', 'You can only pay for your own booking.');
+    }
+    if (booking.placementFeePaid) {
+        return {
+            success: true,
+            alreadyPaid: true,
+            reference: booking.paynowReference || `TRA-${bookingId.slice(0, 8).toUpperCase()}`,
+        };
     }
     const paynowConfig = {
         integrationId: process.env.PAYNOW_INTEGRATION_ID || '',
         integrationKey: process.env.PAYNOW_INTEGRATION_KEY || '',
-        resultUrl: `${process.env.FUNCTIONS_URL || ''}/paynow-callback`,
-        returnUrl: `${process.env.FUNCTIONS_URL || ''}/payment-result`,
+        resultUrl: `${getFunctionBaseUrl()}/paynowCallback`,
+        returnUrl: `${getSiteUrl()}/book/${booking.workerSlug || booking.workerId}/confirmation?bookingId=${bookingId}`,
     };
+    if (!paynowConfig.integrationId || !paynowConfig.integrationKey) {
+        await bookingRef.update({
+            paynowStatus: 'configuration_required',
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        return { success: false, error: 'Paynow is not configured yet. Please contact Traamand on WhatsApp.' };
+    }
     const reference = `TRA-${bookingId.slice(0, 8).toUpperCase()}`;
     const description = `Traamand placement fee for booking ${bookingId.slice(0, 8)}`;
+    const amount = Number(booking.placementFee || 0);
+    if (!amount || amount <= 0) {
+        throw new https_1.HttpsError('failed-precondition', 'This booking has no placement fee to pay.');
+    }
     try {
         const response = await fetch('https://www.paynow.co.zw/interface/initiatetransaction', {
             method: 'POST',
@@ -296,19 +350,20 @@ exports.processPaynowPayment = (0, https_1.onCall)(async (request) => {
                 additionalinfo: description,
                 returnurl: paynowConfig.returnUrl,
                 resulturl: paynowConfig.resultUrl,
-                authemail: email || 'client@traamand.co.zw',
+                authemail: email || booking.clientEmail || 'client@traamand.co.zw',
                 status: 'Message',
             }),
         });
         const text = await response.text();
         const params = new URLSearchParams(text);
-        const pollUrl = params.get('PollUrl');
-        const browserUrl = params.get('BrowserUrl');
+        const pollUrl = getPaynowParam(params, 'PollUrl');
+        const browserUrl = getPaynowParam(params, 'BrowserUrl');
         if (pollUrl && browserUrl) {
             await bookingRef.update({
                 paynowPollUrl: pollUrl,
                 paynowReference: reference,
                 paynowStatus: 'pending',
+                paynowInitiatedAt: admin.firestore.FieldValue.serverTimestamp(),
                 updatedAt: admin.firestore.FieldValue.serverTimestamp(),
             });
             return {
@@ -318,22 +373,39 @@ exports.processPaynowPayment = (0, https_1.onCall)(async (request) => {
                 reference,
             };
         }
-        const error = params.get('Error');
+        const error = getPaynowParam(params, 'Error');
+        await bookingRef.update({
+            paynowStatus: 'initiation_failed',
+            paynowLastError: error || text.slice(0, 300) || 'Payment initiation failed',
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
         return { success: false, error: error || 'Payment initiation failed' };
     }
     catch (err) {
+        await bookingRef.update({
+            paynowStatus: 'initiation_error',
+            paynowLastError: err.message,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
         return { success: false, error: err.message };
     }
 });
 exports.pollPaynowPayment = (0, https_1.onCall)(async (request) => {
     const { bookingId } = request.data;
+    if (!request.auth?.uid)
+        throw new https_1.HttpsError('unauthenticated', 'Sign in to check payment status.');
     if (!bookingId)
-        throw new Error('Missing bookingId');
+        throw new https_1.HttpsError('invalid-argument', 'Missing bookingId');
     const bookingRef = db.collection('bookings').doc(bookingId);
     const bookingSnap = await bookingRef.get();
     if (!bookingSnap.exists)
-        throw new Error('Booking not found');
+        throw new https_1.HttpsError('not-found', 'Booking not found');
     const booking = bookingSnap.data();
+    const userSnap = await db.collection('users').doc(request.auth.uid).get();
+    const isAdmin = userSnap.data()?.role === 'admin';
+    if (booking.clientId !== request.auth.uid && !isAdmin) {
+        throw new https_1.HttpsError('permission-denied', 'You can only check your own booking payment.');
+    }
     const pollUrl = booking.paynowPollUrl;
     if (!pollUrl)
         return { paid: false, status: booking.paynowStatus || 'not_started' };
@@ -341,7 +413,7 @@ exports.pollPaynowPayment = (0, https_1.onCall)(async (request) => {
         const response = await fetch(pollUrl);
         const text = await response.text();
         const params = new URLSearchParams(text);
-        const status = params.get('status') || params.get('Status') || 'unknown';
+        const status = getPaynowParam(params, 'status') || 'unknown';
         const paid = status.toLowerCase() === 'paid';
         await bookingRef.update({
             paynowStatus: status,
@@ -351,30 +423,46 @@ exports.pollPaynowPayment = (0, https_1.onCall)(async (request) => {
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         });
         if (paid) {
-            const existingTxn = await db
-                .collection('transactions')
-                .where('type', '==', 'placement_fee')
-                .where('reference', '==', bookingId)
-                .limit(1)
-                .get();
-            if (existingTxn.empty) {
-                await db.collection('transactions').add({
-                    userId: booking.clientId,
-                    type: 'placement_fee',
-                    amount: booking.placementFee || 0,
-                    balance: 0,
-                    reference: bookingId,
-                    description: `Placement fee paid for booking ${bookingId.slice(0, 8)}`,
-                    status: 'completed',
-                    createdAt: admin.firestore.FieldValue.serverTimestamp(),
-                });
-            }
+            await writePlacementFeeTransaction(bookingId, booking);
         }
         return { paid, status };
     }
     catch (err) {
         return { paid: false, status: 'error', error: err.message };
     }
+});
+exports.paynowCallback = (0, https_1.onRequest)(async (req, res) => {
+    const rawBody = typeof req.body === 'string'
+        ? req.body
+        : new URLSearchParams((req.body || {})).toString();
+    const params = new URLSearchParams(req.method === 'GET' ? (req.url.split('?')[1] || '') : rawBody);
+    const reference = getPaynowParam(params, 'reference');
+    const status = getPaynowParam(params, 'status') || 'unknown';
+    if (!reference.startsWith('TRA-')) {
+        res.status(400).send('Invalid reference');
+        return;
+    }
+    const bookingPrefix = reference.replace(/^TRA-/, '').toLowerCase();
+    const snap = await db.collection('bookings').where('paynowReference', '==', reference).limit(1).get();
+    const bookingDoc = snap.docs[0] ||
+        (await db.collection('bookings').get()).docs.find((doc) => doc.id.toLowerCase().startsWith(bookingPrefix));
+    if (!bookingDoc) {
+        res.status(404).send('Booking not found');
+        return;
+    }
+    const booking = bookingDoc.data();
+    const paid = status.toLowerCase() === 'paid';
+    await bookingDoc.ref.update({
+        paynowStatus: status,
+        placementFeePaid: paid ? true : booking.placementFeePaid || false,
+        paynowPaidAt: paid ? admin.firestore.FieldValue.serverTimestamp() : booking.paynowPaidAt || null,
+        status: paid ? 'placement_fee_paid' : booking.status,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+    if (paid) {
+        await writePlacementFeeTransaction(bookingDoc.id, booking);
+    }
+    res.status(200).send('OK');
 });
 exports.onBookingAuditAndAvailability = (0, firestore_1.onDocumentUpdated)({ document: 'bookings/{bookingId}' }, async (event) => {
     const before = event.data?.before.data();
