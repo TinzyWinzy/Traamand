@@ -4,6 +4,8 @@ import { EDUCATION_LEVELS, LANGUAGES, SERVICE_CATEGORIES } from '../../lib/const
 import { createApplicant } from '../../firebase/firestore'
 import { uploadApplicantFile } from '../../lib/upload'
 import { useAuthStore } from '../../stores/authStore'
+import { doc, updateDoc } from 'firebase/firestore'
+import { db } from '../../firebase/config'
 
 const SELLING_POINTS = [
   { icon: Briefcase, text: 'Immediate Job Placement — quick matching with families and businesses looking for help.' },
@@ -100,6 +102,10 @@ export default function JoinTeamForm() {
         source: 'join_team_form',
         userId: user?.id || '',
       })
+
+      if (user?.id && user.role === 'client') {
+        await updateDoc(doc(db, 'users', user.id), { role: 'applicant' })
+      }
 
       setApplicantRef(applicantId)
       setSubmitted(true)

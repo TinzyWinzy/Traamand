@@ -21,6 +21,7 @@ export function AuthGuard({ children, requireRole, navigate }: AuthGuardProps) {
         creator: '/creator/sign-in',
         sponsor: '/sponsor/sign-in',
         advertise: '/advertise/sign-in',
+        applicant: '/applicant/sign-in',
       }
       const target = requireRole && roleSignInMap[requireRole] ? roleSignInMap[requireRole] : '/sign-in'
       navigate(target)

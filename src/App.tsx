@@ -42,6 +42,8 @@ import VerifierSignIn from './pages/verifier/VerifierSignIn'
 import CreatorSignIn from './pages/creator/CreatorSignIn'
 import SponsorSignIn from './pages/sponsor/SponsorSignIn'
 import AdvertiseSignIn from './pages/advertise/AdvertiseSignIn'
+import ApplicantSignIn from './pages/applicant/ApplicantSignIn'
+import ApplicantDashboard from './pages/applicant/ApplicantDashboard'
 
 function AuthRoute({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate()
@@ -66,6 +68,15 @@ function VerifierRoute({ children }: { children: React.ReactNode }) {
   )
 }
 
+function ApplicantRoute({ children }: { children: React.ReactNode }) {
+  const navigate = useNavigate()
+  return (
+    <AuthGuard requireRole="applicant" navigate={navigate}>
+      {children}
+    </AuthGuard>
+  )
+}
+
 export default function App() {
   return (
     <ErrorBoundary>
@@ -85,6 +96,7 @@ export default function App() {
           <Route path="/creator/sign-in" element={<CreatorSignIn />} />
           <Route path="/sponsor/sign-in" element={<SponsorSignIn />} />
           <Route path="/advertise/sign-in" element={<AdvertiseSignIn />} />
+          <Route path="/applicant/sign-in" element={<ApplicantSignIn />} />
           <Route path="/r/:code" element={<ReferralLandingPage />} />
           <Route
             path="/verifier"
@@ -133,9 +145,17 @@ export default function App() {
           <Route
             path="/my-application"
             element={
-              <AuthRoute>
+              <ApplicantRoute>
                 <MyApplication />
-              </AuthRoute>
+              </ApplicantRoute>
+            }
+          />
+          <Route
+            path="/applicant"
+            element={
+              <ApplicantRoute>
+                <ApplicantDashboard />
+              </ApplicantRoute>
             }
           />
           <Route

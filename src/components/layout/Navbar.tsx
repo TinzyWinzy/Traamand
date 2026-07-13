@@ -141,14 +141,16 @@ export default function Navbar() {
                         </Link>
 
                         {/* My Application */}
-                        <Link
-                          to="/my-application"
-                          onClick={() => setDropdownOpen(false)}
-                          className="flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
-                        >
-                          <FileText className="h-4 w-4" />
-                          My Application
-                        </Link>
+                        {user.role === 'applicant' && (
+                          <Link
+                            to="/applicant"
+                            onClick={() => setDropdownOpen(false)}
+                            className="flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
+                          >
+                            <FileText className="h-4 w-4" />
+                            My Application
+                          </Link>
+                        )}
 
                         {/* Admin Dashboard */}
                         {user.role === 'admin' && (
@@ -308,13 +310,15 @@ export default function Navbar() {
                   >
                     My Hires
                   </Link>
-                  <Link
-                    to="/my-application"
-                    onClick={closeDrawer}
-                    className="block rounded-xl px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                  >
-                    My Application
-                  </Link>
+                  {user.role === 'applicant' && (
+                    <Link
+                      to="/applicant"
+                      onClick={closeDrawer}
+                      className="block rounded-xl px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                    >
+                      My Application
+                    </Link>
+                  )}
                   <Link
                     to="/my-referrals"
                     onClick={closeDrawer}
