@@ -175,24 +175,28 @@ export default function Navbar() {
                         )}
 
                         {/* Creator */}
-                        <Link
-                          to="/creator"
-                          onClick={() => setDropdownOpen(false)}
-                          className="flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
-                        >
-                          <PenTool className="h-4 w-4" />
-                          Create Content
-                        </Link>
+                        {user.role === 'creator' && (
+                          <Link
+                            to="/creator"
+                            onClick={() => setDropdownOpen(false)}
+                            className="flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
+                          >
+                            <PenTool className="h-4 w-4" />
+                            Create Content
+                          </Link>
+                        )}
 
                         {/* Sponsor */}
-                        <Link
-                          to="/sponsor"
-                          onClick={() => setDropdownOpen(false)}
-                          className="flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
-                        >
-                          <HandshakeIcon className="h-4 w-4" />
-                          Sponsor
-                        </Link>
+                        {user.role === 'sponsor' && (
+                          <Link
+                            to="/sponsor"
+                            onClick={() => setDropdownOpen(false)}
+                            className="flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
+                          >
+                            <HandshakeIcon className="h-4 w-4" />
+                            Sponsor
+                          </Link>
+                        )}
                       </div>
 
                       {/* Divider */}
@@ -220,13 +224,6 @@ export default function Navbar() {
                   className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
                 >
                   Sign In
-                </Link>
-                <Link
-                  to="/admin/sign-in"
-                  className="rounded-lg px-2 py-2 text-xs font-medium text-slate-400 transition hover:text-slate-600 hover:bg-slate-50"
-                  title="Staff Login"
-                >
-                  Admin
                 </Link>
               </>
             )}
@@ -343,13 +340,15 @@ export default function Navbar() {
                   >
                     Sponsor
                   </Link>
-                  <Link
-                    to="/advertise"
-                    onClick={closeDrawer}
-                    className="block rounded-xl px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                  >
-                    Advertise
-                  </Link>
+                  {user.role === 'advertise' && (
+                    <Link
+                      to="/advertise"
+                      onClick={closeDrawer}
+                      className="block rounded-xl px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                    >
+                      Advertise
+                    </Link>
+                  )}
                   <div className="border-t border-slate-100 my-3" />
                   <div className="px-4 py-2 text-sm text-slate-400">Signed in as {user.name}</div>
                   <button
@@ -367,13 +366,6 @@ export default function Navbar() {
                     className="block rounded-xl px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                   >
                     Sign In
-                  </Link>
-                  <Link
-                    to="/admin/sign-in"
-                    onClick={closeDrawer}
-                    className="block rounded-xl px-4 py-2 text-xs font-medium text-slate-400 transition hover:text-slate-600 hover:bg-slate-50"
-                  >
-                    Admin Login
                   </Link>
                 </>
               )}

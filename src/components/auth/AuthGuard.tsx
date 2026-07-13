@@ -15,7 +15,15 @@ export function AuthGuard({ children, requireRole, navigate }: AuthGuardProps) {
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      navigate('/sign-in')
+      const roleSignInMap: Record<string, string> = {
+        admin: '/admin/sign-in',
+        verifier: '/verifier/sign-in',
+        creator: '/creator/sign-in',
+        sponsor: '/sponsor/sign-in',
+        advertise: '/advertise/sign-in',
+      }
+      const target = requireRole && roleSignInMap[requireRole] ? roleSignInMap[requireRole] : '/sign-in'
+      navigate(target)
     } else if (!isLoading && isAuthenticated && requireRole && user?.role !== requireRole) {
       navigate('/')
     }

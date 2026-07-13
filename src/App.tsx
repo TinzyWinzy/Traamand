@@ -38,6 +38,10 @@ import AdminPayouts from './pages/admin/payouts/AdminPayouts'
 import AdminCreatorSubmissions from './pages/admin/content/AdminCreatorSubmissions'
 import AdminVerifierTasks from './pages/admin/tasks/AdminVerifierTasks'
 import AdminSignIn from './pages/admin/AdminSignIn'
+import VerifierSignIn from './pages/verifier/VerifierSignIn'
+import CreatorSignIn from './pages/creator/CreatorSignIn'
+import SponsorSignIn from './pages/sponsor/SponsorSignIn'
+import AdvertiseSignIn from './pages/advertise/AdvertiseSignIn'
 
 function AuthRoute({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate()
@@ -76,6 +80,11 @@ export default function App() {
           <Route path="/find-a-maid" element={<FindMaid />} />
           <Route path="/join-our-team" element={<JoinTeam />} />
           <Route path="/sign-in" element={<SignIn />} />
+          <Route path="/admin/sign-in" element={<AdminSignIn />} />
+          <Route path="/verifier/sign-in" element={<VerifierSignIn />} />
+          <Route path="/creator/sign-in" element={<CreatorSignIn />} />
+          <Route path="/sponsor/sign-in" element={<SponsorSignIn />} />
+          <Route path="/advertise/sign-in" element={<AdvertiseSignIn />} />
           <Route path="/r/:code" element={<ReferralLandingPage />} />
           <Route
             path="/verifier"
