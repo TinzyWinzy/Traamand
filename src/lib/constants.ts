@@ -53,6 +53,37 @@ export const SERVICE_CATEGORIES = [
   "Maid", "Nanny", "Chef", "Gardener", "Nurse Aide", "Driver", "Sales Lady", "Bar Lady",
 ] as const
 
+export const HOUSE_CLEANING_ACTIVITIES = [
+  "General house cleaning",
+  "Deep cleaning",
+  "Spring cleaning",
+  "Move-in and move-out cleaning",
+  "Kitchen cleaning",
+  "Bathroom cleaning",
+  "Floor sweeping and mopping",
+  "Dusting furniture and surfaces",
+  "Laundry washing",
+  "Ironing",
+  "Bed making and linen changing",
+  "Wardrobe organizing",
+  "Cupboard and pantry organizing",
+  "Dishwashing",
+  "Trash removal",
+  "Window cleaning",
+  "Post-renovation cleaning",
+  "After-party cleaning",
+  "Office cleaning",
+  "Airbnb and guest house turnover cleaning",
+] as const
+
+export const EMPLOYMENT_AGENT_SERVICES = [
+  "High-quality, carefully selected maids",
+  "Gardeners for lawn care and landscaping",
+  "Nurse aides for elderly and patient support",
+  "Drivers for school runs, errands, and chauffeur work",
+  "Nannies, chefs, sales ladies, and bar ladies",
+] as const
+
 export interface CategoryMeta {
   id: string
   name: string
@@ -63,7 +94,7 @@ export interface CategoryMeta {
 }
 
 export const CATEGORIES: CategoryMeta[] = [
-  { id: 'maids', name: 'Maid', slug: 'maids', description: 'Housekeeping, cleaning & laundry', icon: 'Sparkles', sortOrder: 1 },
+  { id: 'maids', name: 'Maid', slug: 'maids', description: 'House cleaning, deep cleaning, laundry & ironing', icon: 'Sparkles', sortOrder: 1 },
   { id: 'nannies', name: 'Nanny', slug: 'nannies', description: 'Childcare, newborn care & tutoring', icon: 'Baby', sortOrder: 2 },
   { id: 'chefs', name: 'Chef', slug: 'chefs', description: 'Cooking, baking & meal planning', icon: 'ChefHat', sortOrder: 3 },
   { id: 'gardeners', name: 'Gardener', slug: 'gardeners', description: 'Lawn care, landscaping & pruning', icon: 'Trees', sortOrder: 4 },

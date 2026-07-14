@@ -23,7 +23,14 @@ import {
   Quote,
   ChevronRight,
 } from 'lucide-react'
-import { CATEGORIES, COMPANY_NAME, PRIMARY_PHONE, type CategoryMeta } from '../../lib/constants'
+import {
+  CATEGORIES,
+  COMPANY_NAME,
+  EMPLOYMENT_AGENT_SERVICES,
+  HOUSE_CLEANING_ACTIVITIES,
+  PRIMARY_PHONE,
+  type CategoryMeta,
+} from '../../lib/constants'
 import type { Worker } from '../../types'
 import SEOHead from '../../components/seo/SEOHead'
 import {
@@ -130,6 +137,12 @@ const SEARCH_INTENTS = [
   'gardeners in Harare',
   'nurse aides in Harare',
   'drivers in Harare',
+  'house cleaning in Harare',
+  'home cleaning services Harare',
+  'deep cleaning services Harare',
+  'gardeners in Harare',
+  'elderly care Harare',
+  'drivers near me Harare',
 ]
 
 export default function HomePage() {
@@ -199,6 +212,11 @@ export default function HomePage() {
               across Harare with verified staff ready for interviews and bookings.
             </p>
 
+            <p className="mx-auto mt-3 max-w-2xl text-sm font-semibold leading-relaxed text-white/80">
+              Employment agent for carefully selected service providers: maids, gardeners,
+              nurse aides, drivers, nannies, chefs, sales ladies, and bar ladies.
+            </p>
+
             <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
               <Link
                 to="/hire/maids"
@@ -254,6 +272,47 @@ export default function HomePage() {
                 <span key={area} className="rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-700">
                   {area}
                 </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="border-b border-slate-200 bg-white py-12">
+        <div className="mx-auto grid max-w-7xl gap-10 px-4 sm:px-6 lg:grid-cols-2 lg:px-8">
+          <div>
+            <h2 className="text-2xl font-extrabold tracking-tight text-slate-900">
+              House Cleaning Services Traamand Maids Can Cover
+            </h2>
+            <p className="mt-3 text-sm leading-7 text-slate-600">
+              For clients searching house cleaning in Harare, home cleaning services, cleaners
+              near me, or maid services, Traamand maids can support everyday housekeeping and
+              heavier cleaning jobs. The goal is simple: match households with reliable people who
+              can handle the work that actually happens inside a home.
+            </p>
+            <div className="mt-5 grid gap-2 sm:grid-cols-2">
+              {HOUSE_CLEANING_ACTIVITIES.map((activity) => (
+                <div key={activity} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700">
+                  {activity}
+                </div>
+              ))}
+            </div>
+          </div>
+          <div>
+            <h2 className="text-2xl font-extrabold tracking-tight text-slate-900">
+              Employment Agent for Carefully Selected Service Providers
+            </h2>
+            <p className="mt-3 text-sm leading-7 text-slate-600">
+              Traamand is not only for maid services. The employment agency model covers multiple
+              household and workplace roles, with screening, applicant review, admin follow-up,
+              and WhatsApp support built into the placement process.
+            </p>
+            <div className="mt-5 space-y-2">
+              {EMPLOYMENT_AGENT_SERVICES.map((service) => (
+                <div key={service} className="flex items-center gap-3 rounded-lg border border-teal-100 bg-teal-50 px-3 py-2 text-sm font-semibold text-teal-800">
+                  <BadgeCheck className="h-4 w-4 shrink-0 text-teal-600" />
+                  {service}
+                </div>
               ))}
             </div>
           </div>

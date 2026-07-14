@@ -40,7 +40,13 @@ function firestore() { return admin.firestore(); }
 const BASE_URL = 'https://traamand.co.zw';
 const STATIC_SEO_PAGES = [
     { path: '/maids-in-harare', priority: '0.95', changefreq: 'weekly' },
+    { path: '/house-cleaning-harare', priority: '0.95', changefreq: 'weekly' },
+    { path: '/home-cleaning-services-harare', priority: '0.9', changefreq: 'weekly' },
+    { path: '/deep-cleaning-services-harare', priority: '0.9', changefreq: 'weekly' },
     { path: '/domestic-workers-harare', priority: '0.95', changefreq: 'weekly' },
+    { path: '/gardeners-in-harare', priority: '0.85', changefreq: 'weekly' },
+    { path: '/nurse-aides-harare', priority: '0.85', changefreq: 'weekly' },
+    { path: '/drivers-in-harare', priority: '0.85', changefreq: 'weekly' },
     { path: '/maid-jobs-harare', priority: '0.9', changefreq: 'weekly' },
     { path: '/domestic-worker-jobs-harare', priority: '0.9', changefreq: 'weekly' },
     { path: '/domestic-worker-jobs-zimbabwe', priority: '0.85', changefreq: 'weekly' },
