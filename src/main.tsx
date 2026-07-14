@@ -4,6 +4,9 @@ import { BrowserRouter } from 'react-router-dom'
 import { HelmetProvider } from 'react-helmet-async'
 import App from './App'
 import './index.css'
+import { markAppLoaded } from './lib/chunkRecovery'
+
+markAppLoaded()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

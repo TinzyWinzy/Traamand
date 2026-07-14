@@ -12,6 +12,7 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
+      injectRegister: 'auto',
       includeAssets: ['favicon.svg', 'logo.png', 'logo.jpg'],
       manifest: {
         name: 'Traamand — Hire Domestic Help',
@@ -38,6 +39,9 @@ export default defineConfig({
         ],
       },
       workbox: {
+        cleanupOutdatedCaches: true,
+        clientsClaim: true,
+        skipWaiting: true,
         globPatterns: ['**/*.{js,css,html,svg,png,jpg,woff2}'],
         runtimeCaching: [
           {
