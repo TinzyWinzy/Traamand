@@ -120,24 +120,6 @@ export function generateOrganizationStructuredData(): Record<string, unknown> {
       'maid jobs in Harare',
       'nanny jobs in Harare',
     ],
-    makesOffer: [
-      'Maid placement',
-      'Nanny placement',
-      'Chef placement',
-      'Gardener placement',
-      'Nurse aide placement',
-      'Driver placement',
-      'Sales lady placement',
-      'Bar lady placement',
-      'Domestic worker recruitment',
-    ].map((name) => ({
-      '@type': 'Offer',
-      itemOffered: {
-        '@type': 'Service',
-        name,
-        areaServed: 'Harare, Zimbabwe',
-      },
-    })),
     openingHoursSpecification: {
       '@type': 'OpeningHoursSpecification',
       dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
@@ -167,22 +149,17 @@ export function generateHiringWebsiteStructuredData(): Record<string, unknown> {
 export function generateJobsPageStructuredData(): Record<string, unknown> {
   return {
     '@context': 'https://schema.org',
-    '@type': 'CollectionPage',
+    '@type': 'WebPage',
+    '@id': 'https://traamand.co.zw/join-our-team#webpage',
     name: 'Domestic Worker Jobs in Harare and Zimbabwe | Traamand',
     description:
       'Apply for maid, nanny, chef, gardener, nurse aide, driver, sales lady, and bar lady jobs through Traamand Employment Services in Harare, Zimbabwe.',
     url: 'https://traamand.co.zw/join-our-team',
-    about: [
-      'maid jobs in Harare',
-      'domestic worker jobs in Zimbabwe',
-      'nanny jobs in Harare',
-      'chef jobs in Harare',
-      'gardener jobs in Harare',
-      'nurse aide jobs in Harare',
-      'driver jobs in Harare',
-    ],
     isPartOf: {
       '@id': 'https://traamand.co.zw/#website',
+    },
+    publisher: {
+      '@id': 'https://traamand.co.zw/#organization',
     },
   }
 }

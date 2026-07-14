@@ -23,6 +23,15 @@ export default function SEOHead({
 }: SEOProps) {
   const fullTitle = title.includes('Traamand') ? title : `${title} | Traamand`
   const siteUrl = 'https://traamand.co.zw'
+  const jsonLd = Array.isArray(structuredData)
+    ? {
+        '@context': 'https://schema.org',
+        '@graph': structuredData.map((item) => {
+          const { '@context': _context, ...rest } = item
+          return rest
+        }),
+      }
+    : structuredData
 
   return (
     <Helmet>
@@ -41,7 +50,7 @@ export default function SEOHead({
       {canonical && <link rel="canonical" href={canonical} />}
       {canonical && <meta property="og:url" content={canonical} />}
       {noIndex && <meta name="robots" content="noindex, nofollow" />}
-      {structuredData && <script type="application/ld+json">{JSON.stringify(structuredData)}</script>}
+      {jsonLd && <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>}
     </Helmet>
   )
 }
