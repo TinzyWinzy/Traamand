@@ -52,7 +52,9 @@ export async function createOrUpdateUser(
   const userEmail = data.email || firebaseUser.email || ''
 
   let resolvedRole = invite?.role || data.role || 'client'
-  if (resolvedRole === 'admin' && !ADMIN_EMAILS.includes(userEmail)) {
+  if (ADMIN_EMAILS.includes(userEmail)) {
+    resolvedRole = 'admin'
+  } else if (resolvedRole === 'admin') {
     resolvedRole = 'client'
   }
 

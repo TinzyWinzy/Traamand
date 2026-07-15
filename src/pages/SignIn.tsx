@@ -46,13 +46,13 @@ export default function SignIn() {
       const redirect = searchParams.get('redirect')
       if (redirect?.startsWith('/') && !redirect.startsWith('//')) {
         navigate(redirect)
-      } else if (role === 'admin') navigate('/admin')
-      else if (role === 'verifier') navigate('/verifier')
-      else if (role === 'creator') navigate('/creator')
-      else if (role === 'sponsor') navigate('/sponsor')
-      else if (role === 'advertise') navigate('/advertise')
-      else if (role === 'applicant') navigate('/applicant')
-      else if (role === 'client') navigate('/client')
+      } else if (user.role === 'admin') navigate('/admin')
+      else if (user.role === 'verifier') navigate('/verifier')
+      else if (user.role === 'creator') navigate('/creator')
+      else if (user.role === 'sponsor') navigate('/sponsor')
+      else if (user.role === 'advertise') navigate('/advertise')
+      else if (user.role === 'applicant') navigate('/applicant')
+      else if (user.role === 'client') navigate('/client')
       else navigate('/')
     } catch (err: any) {
       if (err.code !== 'auth/popup-closed-by-user') {
