@@ -15,6 +15,17 @@ import { useToastStore } from '../../../stores/toastStore'
 import { generateWorkerSlug } from '../../../lib/worker'
 
 const SERVICE_CATEGORIES = ['Maid', 'Nanny', 'Chef', 'Gardener', 'Nurse Aide', 'Driver', 'Sales Lady', 'Bar Lady']
+
+const SKILL_SUGGESTIONS: Record<string, string[]> = {
+  Maid: ['cleaning', 'maid', 'housekeeping', 'laundry', 'ironing', 'dusting', 'mopping', 'deep cleaning', 'organizing'],
+  Nanny: ['newborn care', 'infant care', 'childcare', 'nanny', 'toddler', 'first aid', 'feeding', 'bathing', 'early education'],
+  Chef: ['cooking', 'baking', 'chef', 'meal planning', 'meal prep', 'pastry', 'grilling', 'dietary meals'],
+  Gardener: ['gardening', 'lawn mowing', 'landscaping', 'garden', 'pruning', 'irrigation', 'hedge trimming', 'planting'],
+  'Nurse Aide': ['elderly care', 'nurse aide', 'patient care', 'medication', 'mobility support', 'vital signs', 'bedside care'],
+  Driver: ['driving', 'driver', 'chauffeur', 'route planning', 'defensive driving', 'school runs', 'vehicle maintenance'],
+  'Sales Lady': ['sales', 'retail', 'customer service', 'cash handling', 'merchandising', 'inventory'],
+  'Bar Lady': ['bartending', 'mixology', 'bar', 'customer service', 'stock control', 'event service'],
+}
 const HARARE_SUBURBS = [
   'Avondale', 'Belgravia', 'Borrowdale', 'Chisipite', 'Eastlea', 'Glen Lorne',
   'Greendale', 'Gunhill', 'Hatfield', 'Highlands', 'Kensington', 'Mabelreign',
@@ -136,6 +147,7 @@ export default function WorkerForm() {
       lastName: form.lastName,
       displayName: form.displayName || `${form.firstName} ${form.lastName.charAt(0)}.`,
       slug,
+      category: form.category,
       verificationStatus: form.verificationStatus,
       divineSeal: {
         idVerified: form.idVerified,
@@ -229,7 +241,7 @@ export default function WorkerForm() {
 
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-5">
             <h2 className="text-lg font-bold text-slate-900">Skills & Languages</h2>
-            <TagInput label="Skills" tags={form.skills} newValue={form.newSkill} onNewChange={(v) => update('newSkill', v)} onAdd={addSkill} onRemove={(s) => update('skills', form.skills.filter((t) => t !== s))} />
+            <TagInput label="Skills" tags={form.skills} newValue={form.newSkill} onNewChange={(v) => update('newSkill', v)} onAdd={addSkill} onRemove={(s) => update('skills', form.skills.filter((t) => t !== s))} suggestions={SKILL_SUGGESTIONS[form.category] || []} />
             <TagInput label="Languages" tags={form.languages} newValue={form.newLanguage} onNewChange={(v) => update('newLanguage', v)} onAdd={addLanguage} onRemove={(s) => update('languages', form.languages.filter((t) => t !== s))} />
           </div>
 
