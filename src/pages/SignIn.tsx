@@ -13,7 +13,7 @@ const ROLES: { value: UserRole; label: string }[] = [
   { value: 'creator', label: 'Creator' },
   { value: 'sponsor', label: 'Sponsor' },
   { value: 'advertise', label: 'Advertiser' },
-  { value: 'admin', label: 'Admin' },
+
 ]
 
 export default function SignIn() {

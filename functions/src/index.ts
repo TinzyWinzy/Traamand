@@ -112,11 +112,29 @@ async function releaseWorkerIfNoActiveBookings(workerId: string) {
   }
 }
 
+const ADMIN_EMAILS = ['brandontinoz@gmail.com', 'tmandovha@gmail.com']
+
 export const setUserRole = onCall(async (request) => {
   const uid = request.data.uid as string
   const role = request.data.role as string
   if (!uid || !role) {
-    throw new Error('Missing uid or role')
+    throw new HttpsError('invalid-argument', 'Missing uid or role')
+  }
+
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'Must be signed in')
+  }
+
+  if (request.data.uid !== request.auth.uid) {
+    throw new HttpsError('permission-denied', 'You can only set your own role')
+  }
+
+  if (role === 'admin') {
+    const callerSnap = await db.collection('users').doc(request.auth.uid).get()
+    const callerEmail = callerSnap.data()?.email as string | undefined
+    if (!callerEmail || !ADMIN_EMAILS.includes(callerEmail)) {
+      throw new HttpsError('permission-denied', 'Not authorized for admin role')
+    }
   }
 
   await adminAuth.setCustomUserClaims(uid, { role })

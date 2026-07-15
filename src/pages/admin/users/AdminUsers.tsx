@@ -139,7 +139,6 @@ export default function AdminUsers() {
               >
                 <option value="client">Client</option>
                 <option value="verifier">Verifier</option>
-                <option value="admin">Admin</option>
               </select>
             </div>
             <button
@@ -254,7 +253,7 @@ export default function AdminUsers() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-1.5">
-                        {(['client', 'verifier', 'admin'] as UserRole[]).map((r) => (
+                        {(['client', 'verifier'] as UserRole[]).map((r) => (
                           <button
                             key={r}
                             onClick={() => {

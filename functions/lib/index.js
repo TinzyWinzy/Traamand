@@ -119,11 +119,25 @@ async function releaseWorkerIfNoActiveBookings(workerId) {
         }, { merge: true });
     }
 }
+const ADMIN_EMAILS = ['brandontinoz@gmail.com', 'tmandovha@gmail.com'];
 exports.setUserRole = (0, https_1.onCall)(async (request) => {
     const uid = request.data.uid;
     const role = request.data.role;
     if (!uid || !role) {
-        throw new Error('Missing uid or role');
+        throw new https_1.HttpsError('invalid-argument', 'Missing uid or role');
+    }
+    if (!request.auth) {
+        throw new https_1.HttpsError('unauthenticated', 'Must be signed in');
+    }
+    if (request.data.uid !== request.auth.uid) {
+        throw new https_1.HttpsError('permission-denied', 'You can only set your own role');
+    }
+    if (role === 'admin') {
+        const callerSnap = await db.collection('users').doc(request.auth.uid).get();
+        const callerEmail = callerSnap.data()?.email;
+        if (!callerEmail || !ADMIN_EMAILS.includes(callerEmail)) {
+            throw new https_1.HttpsError('permission-denied', 'Not authorized for admin role');
+        }
     }
     await adminAuth.setCustomUserClaims(uid, { role });
     await db.collection('users').doc(uid).set({ role }, { merge: true });

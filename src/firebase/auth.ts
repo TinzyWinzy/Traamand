@@ -48,7 +48,13 @@ export async function createOrUpdateUser(
     invite = null
   }
 
-  const resolvedRole = invite?.role || data.role || 'client'
+  const ADMIN_EMAILS = ['brandontinoz@gmail.com', 'tmandovha@gmail.com']
+  const userEmail = data.email || firebaseUser.email || ''
+
+  let resolvedRole = invite?.role || data.role || 'client'
+  if (resolvedRole === 'admin' && !ADMIN_EMAILS.includes(userEmail)) {
+    resolvedRole = 'client'
+  }
 
   if (userSnap.exists()) {
     const existing = userSnap.data() as any

@@ -33,6 +33,8 @@ export default function RoleSignIn({ expectedRole, successPath, title, descripti
       setFirebaseUser(fbUser)
       if (user.role === expectedRole) {
         navigate(successPath)
+      } else if (expectedRole === 'admin') {
+        setError('This email is not authorized for admin access.')
       } else {
         navigate('/')
       }
