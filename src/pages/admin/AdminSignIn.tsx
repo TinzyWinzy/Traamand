@@ -5,8 +5,8 @@ export default function AdminSignIn() {
     <RoleSignIn
       expectedRole="admin"
       successPath="/admin"
-      title="Admin Access"
-      description="Restricted to authorized administrators only."
+      title="Staff Login"
+      description="Authorized staff only. Sign in with your Traamand Google account."
     />
   )
 }

@@ -234,6 +234,12 @@ export default function Navbar() {
             ) : (
               <>
                 <Link
+                  to="/admin/sign-in"
+                  className="rounded-lg px-2.5 py-2 text-xs font-semibold text-slate-400 transition hover:text-slate-600"
+                >
+                  Staff
+                </Link>
+                <Link
                   to="/sign-in"
                   className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
                 >
@@ -385,6 +391,13 @@ export default function Navbar() {
                 </>
               ) : (
                 <>
+                  <Link
+                    to="/admin/sign-in"
+                    onClick={closeDrawer}
+                    className="block rounded-xl px-4 py-3 text-sm font-semibold text-slate-400 transition hover:bg-slate-50"
+                  >
+                    Staff Login
+                  </Link>
                   <Link
                     to="/sign-in"
                     onClick={closeDrawer}
