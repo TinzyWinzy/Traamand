@@ -124,7 +124,7 @@ export default function AdminApplicants() {
         verifiedAt: null,
         verifiedBy: '',
       },
-      photos: [],
+      photos: applicant.photoUrl ? [applicant.photoUrl] : [],
       bio: '',
       languages: applicant.primaryLanguage ? [applicant.primaryLanguage] : [],
       skills: [applicant.position.toLowerCase().replace(/\s+/g, '-')],
@@ -373,9 +373,18 @@ export default function AdminApplicants() {
                         className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md"
                       >
                         <div className="flex items-start justify-between mb-2">
-                          <div>
-                            <p className="font-bold text-slate-900 text-sm">{applicant.fullName}</p>
-                            <p className="text-xs text-slate-500">{applicant.position}</p>
+                          <div className="flex items-center gap-2">
+                            {applicant.photoUrl ? (
+                              <img src={applicant.photoUrl} alt="" className="h-8 w-8 rounded-lg object-cover" />
+                            ) : (
+                              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-100 text-xs font-bold text-teal-700">
+                                {applicant.fullName?.charAt(0)}
+                              </div>
+                            )}
+                            <div>
+                              <p className="font-bold text-slate-900 text-sm">{applicant.fullName}</p>
+                              <p className="text-xs text-slate-500">{applicant.position}</p>
+                            </div>
                           </div>
                           <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_COLORS[applicant.status]}`}>
                             {applicant.status}
@@ -485,9 +494,13 @@ export default function AdminApplicants() {
                   onClick={() => setModalId(applicant.id)}
                 >
                   <div className="flex items-center gap-4 min-w-0">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-100 text-sm font-bold text-teal-700 shrink-0">
-                      {applicant.fullName?.charAt(0) || '?'}
-                    </div>
+                    {applicant.photoUrl ? (
+                      <img src={applicant.photoUrl} alt="" className="h-10 w-10 rounded-xl object-cover shrink-0" />
+                    ) : (
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-100 text-sm font-bold text-teal-700 shrink-0">
+                        {applicant.fullName?.charAt(0) || '?'}
+                      </div>
+                    )}
                     <div className="min-w-0">
                       <p className="font-bold text-slate-900">{applicant.fullName}</p>
                       <p className="text-sm text-slate-500">{applicant.position} &middot; {applicant.yearsOfExperience}yrs</p>
@@ -521,9 +534,18 @@ export default function AdminApplicants() {
             >
               {/* Header */}
               <div className="flex items-center justify-between rounded-t-2xl bg-gradient-to-r from-teal-600 to-emerald-600 px-6 py-5 text-white">
-                <div>
-                  <h2 className="text-lg font-bold">{applicant.fullName}</h2>
-                  <p className="text-sm text-white/80">{applicant.position} &middot; {applicant.yearsOfExperience}yrs experience</p>
+                <div className="flex items-center gap-3">
+                  {applicant.photoUrl ? (
+                    <img src={applicant.photoUrl} alt="" className="h-12 w-12 rounded-xl object-cover border-2 border-white/30" />
+                  ) : (
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 text-lg font-bold">
+                      {applicant.fullName?.charAt(0)}
+                    </div>
+                  )}
+                  <div>
+                    <h2 className="text-lg font-bold">{applicant.fullName}</h2>
+                    <p className="text-sm text-white/80">{applicant.position} &middot; {applicant.yearsOfExperience}yrs experience</p>
+                  </div>
                 </div>
                 <button
                   onClick={() => setModalId(null)}
@@ -573,6 +595,16 @@ export default function AdminApplicants() {
                     <p className="font-medium text-slate-700 mt-1">{applicant.source || '—'}</p>
                   </div>
                 </div>
+
+                {/* Intro Video */}
+                {applicant.introVideoUrl && (
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Intro Video</p>
+                    <video src={applicant.introVideoUrl} controls className="w-full rounded-xl" style={{ maxHeight: 300 }}>
+                      Your browser does not support the video tag.
+                    </video>
+                  </div>
+                )}
 
                 {/* Documents */}
                 {(applicant.nationalIdUrl || applicant.policeClearanceUrl) && (

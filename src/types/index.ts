@@ -246,6 +246,8 @@ export interface Applicant {
   nextOfKinContact: string
   education: string
   primaryLanguage: string
+  photoUrl?: string
+  introVideoUrl?: string
   nationalIdUrl: string
   policeClearanceUrl: string
   documentUploadStatus?: 'pending' | 'uploaded' | 'failed'

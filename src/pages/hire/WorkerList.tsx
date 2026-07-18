@@ -234,9 +234,13 @@ export default function WorkerList() {
               >
                 <div className="p-5 sm:p-6">
                   <div className="flex items-start gap-4">
-                    <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-100 to-teal-200 text-2xl font-bold text-teal-700 shadow-sm">
-                      {worker.displayName.charAt(0)}
-                    </div>
+                    {worker.photos?.[0] ? (
+                      <img src={worker.photos[0]} alt={worker.displayName} className="h-16 w-16 shrink-0 rounded-2xl object-cover shadow-sm" />
+                    ) : (
+                      <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-100 to-teal-200 text-2xl font-bold text-teal-700 shadow-sm">
+                        {worker.displayName.charAt(0)}
+                      </div>
+                    )}
 
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">

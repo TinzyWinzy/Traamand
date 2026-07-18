@@ -6,10 +6,14 @@ import {
   Loader2,
   Plus,
   X,
+  ImagePlus,
+  Trash2,
+  Video,
 } from 'lucide-react'
 import { doc, getDoc, setDoc, addDoc, serverTimestamp } from 'firebase/firestore'
 import { collection as fbCollection } from 'firebase/firestore'
 import { db } from '../../../firebase/config'
+import { uploadWorkerPhotos, uploadWorkerVideo, MAX_FILE_SIZE } from '../../../lib/upload'
 import { useAuthStore } from '../../../stores/authStore'
 import { useToastStore } from '../../../stores/toastStore'
 import { generateWorkerSlug } from '../../../lib/worker'
@@ -41,7 +45,18 @@ export default function WorkerForm() {
 
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [photoFiles, setPhotoFiles] = useState<File[]>([])
+  const [existingPhotos, setExistingPhotos] = useState<string[]>([])
+  const [photoPreviews, setPhotoPreviews] = useState<string[]>([])
+  const [videoFile, setVideoFile] = useState<File | null>(null)
+  const [existingVideoUrl, setExistingVideoUrl] = useState('')
   const addToast = useToastStore((s) => s.addToast)
+
+  useEffect(() => {
+    return () => {
+      photoPreviews.forEach((p) => URL.revokeObjectURL(p))
+    }
+  }, [photoPreviews])
 
   const [form, setForm] = useState({
     firstName: '',
@@ -104,6 +119,8 @@ export default function WorkerForm() {
         trainingCompleted: w.divineSeal?.trainingCompleted || false,
         isActive: w.isActive ?? true,
       })
+      setExistingPhotos(w.photos || [])
+      setExistingVideoUrl(w.divineSeal?.referenceVideoUrl || '')
     }
     setLoading(false)
   }, [id])
@@ -136,11 +153,69 @@ export default function WorkerForm() {
     }
   }
 
+  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    const oversized = files.find((f) => f.size > 5 * 1024 * 1024)
+    if (oversized) {
+      addToast('Each photo must be under 5MB', 'error')
+      e.target.value = ''
+      return
+    }
+    const previews = files.map((f) => URL.createObjectURL(f))
+    setPhotoFiles((prev) => [...prev, ...files])
+    setPhotoPreviews((prev) => [...prev, ...previews])
+    e.target.value = ''
+  }
+
+  const removeNewPhoto = (index: number) => {
+    URL.revokeObjectURL(photoPreviews[index])
+    setPhotoFiles((prev) => prev.filter((_, i) => i !== index))
+    setPhotoPreviews((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const removeExistingPhoto = (index: number) => {
+    setExistingPhotos((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const handleVideoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > MAX_FILE_SIZE) {
+      addToast('Video must be under 20MB', 'error')
+      e.target.value = ''
+      return
+    }
+    setVideoFile(file)
+  }
+
+  const removeVideo = () => {
+    setVideoFile(null)
+    setExistingVideoUrl('')
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
 
     const slug = generateWorkerSlug(form.firstName, form.lastName, form.preferredLocations[0], form.category)
+
+    let photos = existingPhotos
+    let videoUrl = existingVideoUrl
+    if (id) {
+      const photoUpload = photoFiles.length > 0
+        ? uploadWorkerPhotos(photoFiles, id).then((u) => { photos = [...existingPhotos, ...u] })
+        : Promise.resolve()
+      const videoUpload = videoFile
+        ? uploadWorkerVideo(videoFile, id).then((url) => { videoUrl = url })
+        : Promise.resolve()
+      try {
+        await Promise.all([photoUpload, videoUpload])
+      } catch {
+        addToast('Failed to upload photos or video', 'error')
+        setSaving(false)
+        return
+      }
+    }
 
     const workerData = {
       firstName: form.firstName,
@@ -152,13 +227,13 @@ export default function WorkerForm() {
       divineSeal: {
         idVerified: form.idVerified,
         policeClearance: form.policeClearance,
-        referenceVideoUrl: '',
+        referenceVideoUrl: videoUrl,
         medicalClearance: form.medicalClearance,
         trainingCompleted: form.trainingCompleted,
         verifiedAt: serverTimestamp(),
         verifiedBy: user?.name || 'admin',
       },
-      photos: [],
+      photos,
       bio: form.bio,
       languages: form.languages,
       skills: form.skills,
@@ -186,11 +261,33 @@ export default function WorkerForm() {
     }
 
     try {
+      let workerId = id
       if (isEdit) {
         await setDoc(doc(db, 'workers', id!), { ...workerData, updatedAt: serverTimestamp() }, { merge: true })
       } else {
-        await addDoc(fbCollection(db, 'workers'), workerData)
+        const docRef = await addDoc(fbCollection(db, 'workers'), workerData)
+        workerId = docRef.id
       }
+
+      if (!id) {
+        const newUploads: Promise<void>[] = []
+        if (photoFiles.length > 0) {
+          newUploads.push(
+            uploadWorkerPhotos(photoFiles, workerId!).then((uploaded) =>
+              setDoc(doc(db, 'workers', workerId!), { photos: uploaded, updatedAt: serverTimestamp() }, { merge: true })
+            )
+          )
+        }
+        if (videoFile) {
+          newUploads.push(
+            uploadWorkerVideo(videoFile, workerId!).then((url) =>
+              setDoc(doc(db, 'workers', workerId!), { divineSeal: { referenceVideoUrl: url }, updatedAt: serverTimestamp() }, { merge: true })
+            )
+          )
+        }
+        await Promise.all(newUploads)
+      }
+
       navigate('/admin/workers')
     } catch {
       addToast('Failed to save worker', 'error')
@@ -236,6 +333,78 @@ export default function WorkerForm() {
                 className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
                 placeholder="Brief professional description..."
               />
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-5">
+            <h2 className="text-lg font-bold text-slate-900">Photos</h2>
+            <div>
+              <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-400">Worker Photos</label>
+              <div className="flex flex-wrap gap-3">
+                {existingPhotos.map((url, i) => (
+                  <div key={`existing-${i}`} className="relative group">
+                    <img src={url} alt="" className="h-24 w-24 rounded-xl object-cover border border-slate-200" />
+                    <button
+                      type="button"
+                      onClick={() => removeExistingPhoto(i)}
+                      className="absolute -right-2 -top-2 hidden group-hover:flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white shadow"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+                {photoPreviews.map((preview, i) => (
+                  <div key={`new-${i}`} className="relative group">
+                    <img src={preview} alt="" className="h-24 w-24 rounded-xl object-cover border border-slate-200" />
+                    <button
+                      type="button"
+                      onClick={() => removeNewPhoto(i)}
+                      className="absolute -right-2 -top-2 hidden group-hover:flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white shadow"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+                <label className="flex h-24 w-24 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-300 text-slate-400 hover:border-teal-500 hover:text-teal-600 transition">
+                  <ImagePlus className="h-6 w-6" />
+                  <span className="mt-1 text-[10px] font-medium">Add Photo</span>
+                  <input type="file" accept="image/*" multiple className="hidden" onChange={handlePhotoSelect} />
+                </label>
+              </div>
+              <p className="mt-2 text-xs text-slate-400">Upload worker photos. First photo will be used as the main profile image.</p>
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-400">Intro Video</label>
+              {existingVideoUrl ? (
+                <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                  <Video className="h-5 w-5 text-teal-600" />
+                  <a href={existingVideoUrl} target="_blank" rel="noopener noreferrer" className="flex-1 truncate text-sm font-medium text-teal-600 hover:underline">
+                    {existingVideoUrl.split('/').pop()}
+                  </a>
+                  <button type="button" onClick={removeVideo} className="rounded-lg p-1 text-slate-400 hover:bg-red-50 hover:text-red-600 transition">
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : videoFile ? (
+                <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                  <Video className="h-5 w-5 text-teal-600" />
+                  <span className="flex-1 truncate text-sm font-medium text-slate-700">{videoFile.name}</span>
+                  <button type="button" onClick={removeVideo} className="rounded-lg p-1 text-slate-400 hover:bg-red-50 hover:text-red-600 transition">
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <label className="flex cursor-pointer items-center justify-center gap-3 rounded-xl border-2 border-dashed border-slate-300 px-4 py-6 text-slate-400 hover:border-teal-500 hover:text-teal-600 transition">
+                  <Video className="h-6 w-6" />
+                  <div>
+                    <p className="text-sm font-medium">Upload Intro Video</p>
+                    <p className="text-xs">MP4, WebM, or MOV · max 20MB</p>
+                  </div>
+                  <input type="file" accept="video/*" className="hidden" onChange={handleVideoSelect} />
+                </label>
+              )}
+              <p className="mt-2 text-xs text-slate-400">Introduction video will play on the worker's public profile.</p>
             </div>
           </div>
 

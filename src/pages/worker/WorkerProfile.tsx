@@ -124,9 +124,13 @@ export default function WorkerProfile() {
             </div>
 
             <div className="flex items-center gap-5">
-              <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-3xl bg-white/15 text-4xl font-extrabold text-white shadow-2xl border-2 border-white/20">
-                {worker.displayName.charAt(0)}
-              </div>
+              {worker.photos?.[0] ? (
+                <img src={worker.photos[0]} alt={worker.displayName} className="h-24 w-24 shrink-0 rounded-3xl object-cover shadow-2xl border-2 border-white/20" />
+              ) : (
+                <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-3xl bg-white/15 text-4xl font-extrabold text-white shadow-2xl border-2 border-white/20">
+                  {worker.displayName.charAt(0)}
+                </div>
+              )}
               <div>
                 <h1 className="text-3xl font-extrabold sm:text-4xl">{worker.displayName}</h1>
                 <p className="mt-1 text-lg text-white/80">{worker.skills[0]?.replace(/-/g, ' ')}</p>
@@ -142,13 +146,11 @@ export default function WorkerProfile() {
               </div>
             </div>
 
-            {worker.recentReviews.length > 0 && (
-              <div className="mt-6 rounded-2xl bg-white/10 p-4 backdrop-blur-sm">
-                <p className="text-sm italic text-white/80">
-                  &ldquo;{worker.bio.slice(0, 120)}...&rdquo;
-                </p>
-              </div>
-            )}
+            <div className="mt-6 rounded-2xl bg-white/10 p-4 backdrop-blur-sm">
+              <p className="text-sm italic text-white/80">
+                &ldquo;{worker.bio.slice(0, 120)}...&rdquo;
+              </p>
+            </div>
           </div>
 
           <div className="p-8 sm:p-10">
@@ -223,17 +225,31 @@ export default function WorkerProfile() {
               </div>
             </div>
 
-            {/* Video Placeholder */}
-            <div className="mt-8 overflow-hidden rounded-2xl bg-slate-900">
-              <div className="flex aspect-video items-center justify-center bg-gradient-to-br from-slate-800 to-slate-900">
-                <div className="text-center">
-                  <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-white/10 text-white">
-                    <Play className="h-8 w-8" />
+            {/* Intro Video */}
+            {worker.divineSeal.referenceVideoUrl ? (
+              <div className="mt-8 overflow-hidden rounded-2xl bg-black">
+                <video
+                  data-testid="worker-video"
+                  src={worker.divineSeal.referenceVideoUrl}
+                  controls
+                  className="w-full aspect-video"
+                  playsInline
+                >
+                  Your browser does not support the video tag.
+                </video>
+              </div>
+            ) : (
+              <div className="mt-8 overflow-hidden rounded-2xl bg-slate-900">
+                <div className="flex aspect-video items-center justify-center bg-gradient-to-br from-slate-800 to-slate-900">
+                  <div className="text-center">
+                    <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-white/10 text-white">
+                      <Play className="h-8 w-8" />
+                    </div>
+                    <p className="mt-3 text-sm text-white/60">Introduction video coming soon</p>
                   </div>
-                  <p className="mt-3 text-sm text-white/60">Introduction video coming soon</p>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Divine Seal Verification */}
             <div className="mt-8 rounded-2xl border-2 border-amber-200 bg-gradient-to-br from-amber-50 to-yellow-50 p-6">

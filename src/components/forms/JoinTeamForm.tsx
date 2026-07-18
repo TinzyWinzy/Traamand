@@ -1,8 +1,8 @@
-import { useState } from 'react'
-import { Check, Upload, Loader2, Briefcase, Clock, Building2, TrendingUp } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Check, Upload, Loader2, X, Video, Briefcase, Clock, Building2, TrendingUp } from 'lucide-react'
 import { EDUCATION_LEVELS, LANGUAGES, SERVICE_CATEGORIES } from '../../lib/constants'
 import { createApplicant, updateApplicant } from '../../firebase/firestore'
-import { uploadApplicantFile } from '../../lib/upload'
+import { uploadApplicantFile, uploadApplicantPhoto, uploadApplicantVideo, MAX_FILE_SIZE } from '../../lib/upload'
 import { useAuthStore } from '../../stores/authStore'
 import { doc, updateDoc } from 'firebase/firestore'
 import { db } from '../../firebase/config'
@@ -39,6 +39,11 @@ const INITIAL: FormData = {
 export default function JoinTeamForm() {
   const { user } = useAuthStore()
   const [data, setData] = useState<FormData>(INITIAL)
+  const [photoFile, setPhotoFile] = useState<File | null>(null)
+  const [photoPreview, setPhotoPreview] = useState<string>('')
+  const [photoError, setPhotoError] = useState('')
+  const [introVideoFile, setIntroVideoFile] = useState<File | null>(null)
+  const [introVideoError, setIntroVideoError] = useState('')
   const [nationalIdFile, setNationalIdFile] = useState<File | null>(null)
   const [policeClearanceFile, setPoliceClearanceFile] = useState<File | null>(null)
   const [errors, setErrors] = useState<Partial<Record<string, string>>>({})
@@ -47,6 +52,12 @@ export default function JoinTeamForm() {
   const [submitted, setSubmitted] = useState(false)
   const [applicantRef, setApplicantRef] = useState('')
   const [submitError, setSubmitError] = useState('')
+
+  useEffect(() => {
+    return () => {
+      if (photoPreview) URL.revokeObjectURL(photoPreview)
+    }
+  }, [photoPreview])
 
   const update = (field: keyof FormData, value: string) => {
     setData((prev) => ({ ...prev, [field]: value }))
@@ -112,14 +123,24 @@ export default function JoinTeamForm() {
       }
 
       setApplicantRef(applicantId)
-      const [nationalIdUrl, policeClearanceUrl] = await Promise.all([
+      const uploads: Promise<string>[] = [
         uploadApplicantFile(nationalIdFile!, applicantId, 'nationalId'),
         uploadApplicantFile(policeClearanceFile!, applicantId, 'policeClearance'),
-      ])
+      ]
+      if (photoFile) {
+        uploads.push(uploadApplicantPhoto(photoFile, applicantId))
+      }
+      if (introVideoFile) {
+        uploads.push(uploadApplicantVideo(introVideoFile, applicantId))
+      }
+
+      const [nationalIdUrl, policeClearanceUrl, photoUrl, introVideoUrl] = await Promise.all(uploads)
 
       await updateApplicant(applicantId, {
         nationalIdUrl,
         policeClearanceUrl,
+        ...(photoUrl ? { photoUrl } : {}),
+        ...(introVideoUrl ? { introVideoUrl } : {}),
         documentUploadStatus: 'uploaded',
         documentUploadError: '',
       })
@@ -283,6 +304,86 @@ export default function JoinTeamForm() {
           </Field>
 
           <div className="border-t border-slate-100 pt-5">
+            <h3 className="mb-1 text-sm font-semibold text-slate-900">Profile Photo</h3>
+            <p className="mb-4 text-xs text-slate-500">Upload a recent photo of yourself</p>
+            <div className="mb-5">
+              {photoPreview ? (
+                <div className="relative inline-block">
+                  <img src={photoPreview} alt="Preview" className="h-32 w-32 rounded-xl object-cover border border-slate-200" />
+                  <button
+                    type="button"
+                    onClick={() => { setPhotoFile(null); setPhotoPreview(''); URL.revokeObjectURL(photoPreview) }}
+                    className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white shadow"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ) : (
+                <label className="flex h-32 w-32 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-300 text-slate-400 hover:border-teal-500 hover:text-teal-600 transition">
+                  <Upload className="h-6 w-6" />
+                  <span className="mt-1 text-xs font-medium">Upload Photo</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (!file) return
+                      if (file.size > 5 * 1024 * 1024) {
+                        setPhotoError('Photo must be under 5MB')
+                        return
+                      }
+                      setPhotoError('')
+                      setPhotoFile(file)
+                      URL.revokeObjectURL(photoPreview)
+                      setPhotoPreview(URL.createObjectURL(file))
+                    }}
+                  />
+                </label>
+              )}
+              {photoError && <p className="mt-2 text-xs text-red-600">{photoError}</p>}
+            </div>
+
+            <div className="mb-5 border-t border-slate-100 pt-5">
+              <h3 className="mb-1 text-sm font-semibold text-slate-900">Intro Video (Optional)</h3>
+              <p className="mb-4 text-xs text-slate-500">Upload a short introduction video</p>
+              {introVideoFile ? (
+                <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                  <Video className="h-5 w-5 text-teal-600" />
+                  <span className="flex-1 truncate text-sm font-medium text-slate-700">{introVideoFile.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => { setIntroVideoFile(null); setIntroVideoError('') }}
+                    className="rounded-lg p-1 text-slate-400 hover:bg-red-50 hover:text-red-600 transition"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 px-4 py-6 text-slate-400 hover:border-teal-500 hover:text-teal-600 transition">
+                  <Video className="h-6 w-6" />
+                  <span className="text-sm font-medium">Upload Video</span>
+                  <span className="text-xs">MP4, WebM, or MOV · max 20MB</span>
+                  <input
+                    type="file"
+                    accept="video/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (!file) return
+                      if (file.size > MAX_FILE_SIZE) {
+                        setIntroVideoError('Video must be under 20MB')
+                        return
+                      }
+                      setIntroVideoError('')
+                      setIntroVideoFile(file)
+                    }}
+                  />
+                </label>
+              )}
+              {introVideoError && <p className="mt-2 text-xs text-red-600">{introVideoError}</p>}
+            </div>
+
             <h3 className="mb-1 text-sm font-semibold text-slate-900">Required Documents</h3>
             <p className="mb-4 text-xs text-slate-500">Upload clear scans or photos</p>
 

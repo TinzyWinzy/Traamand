@@ -242,9 +242,13 @@ export default function AdminWorkers() {
                     <tr key={worker.id} className="transition hover:bg-slate-50">
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-100 text-sm font-bold text-teal-700 shrink-0">
-                            {worker.displayName?.charAt(0)}
-                          </div>
+                          {worker.photos?.[0] ? (
+                            <img src={worker.photos[0]} alt="" className="h-10 w-10 rounded-xl object-cover shrink-0" />
+                          ) : (
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-100 text-sm font-bold text-teal-700 shrink-0">
+                              {worker.displayName?.charAt(0)}
+                            </div>
+                          )}
                           <div className="min-w-0">
                             <p className="font-bold text-slate-900 truncate">{worker.displayName}</p>
                             <p className="text-xs text-slate-400 truncate">

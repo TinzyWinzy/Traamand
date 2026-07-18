@@ -7,7 +7,10 @@ vi.mock('../firebase/firestore', () => ({
 }))
 
 vi.mock('../lib/upload', () => ({
+  MAX_FILE_SIZE: 20 * 1024 * 1024,
   uploadApplicantFile: vi.fn().mockResolvedValue('https://storage.example/applicant-file.pdf'),
+  uploadApplicantPhoto: vi.fn().mockResolvedValue('https://storage.example/photo.jpg'),
+  uploadApplicantVideo: vi.fn().mockResolvedValue('https://storage.example/intro.mp4'),
 }))
 
 describe('JoinTeamForm', () => {
@@ -28,6 +31,16 @@ describe('JoinTeamForm', () => {
     expect(screen.getByText('Highest Level of Education')).toBeInTheDocument()
     expect(screen.getByText('Primary Language')).toBeInTheDocument()
     expect(screen.getByText('Next of Kin Contact')).toBeInTheDocument()
+  })
+
+  it('renders profile photo and intro video sections', async () => {
+    const { default: JoinTeamForm } = await import('../components/forms/JoinTeamForm')
+    render(<JoinTeamForm />)
+
+    expect(screen.getByText('Profile Photo')).toBeInTheDocument()
+    expect(screen.getByText('Upload Photo')).toBeInTheDocument()
+    expect(screen.getByText('Intro Video (Optional)')).toBeInTheDocument()
+    expect(screen.getByText('Upload Video')).toBeInTheDocument()
     expect(screen.getByText('Required Documents')).toBeInTheDocument()
   })
 
@@ -64,7 +77,7 @@ describe('JoinTeamForm', () => {
     expect(screen.getByRole('button', { name: /Submit Application/i })).toBeInTheDocument()
   })
 
-  it('shows success screen after form submission', async () => {
+  it('shows success screen after form submission with all file types', async () => {
     const { default: JoinTeamForm } = await import('../components/forms/JoinTeamForm')
     render(<JoinTeamForm />)
 
@@ -79,9 +92,13 @@ describe('JoinTeamForm', () => {
     fireEvent.change(screen.getByPlaceholderText(/name and phone number/i), { target: { value: 'Mother - 0773123456' } })
 
     const fileInputs = document.querySelectorAll('input[type="file"]')
-    const file = new File(['dummy'], 'id.pdf', { type: 'application/pdf' })
-    fireEvent.change(fileInputs[0], { target: { files: [file] } })
-    fireEvent.change(fileInputs[1], { target: { files: [file] } })
+    const pdfFile = new File(['dummy'], 'id.pdf', { type: 'application/pdf' })
+    const imgFile = new File(['dummy'], 'photo.jpg', { type: 'image/jpeg' })
+    const vidFile = new File(['dummy'], 'intro.mp4', { type: 'video/mp4' })
+    fireEvent.change(fileInputs[0], { target: { files: [imgFile] } })
+    fireEvent.change(fileInputs[1], { target: { files: [vidFile] } })
+    fireEvent.change(fileInputs[2], { target: { files: [pdfFile] } })
+    fireEvent.change(fileInputs[3], { target: { files: [pdfFile] } })
 
     fireEvent.click(screen.getByRole('button', { name: /submit application/i }))
 
