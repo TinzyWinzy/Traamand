@@ -2,7 +2,11 @@ import * as admin from 'firebase-admin'
 import { onDocumentCreated, onDocumentUpdated } from 'firebase-functions/v2/firestore'
 import { HttpsError, onCall, onRequest } from 'firebase-functions/v2/https'
 import { setGlobalOptions } from 'firebase-functions/v2'
+import { defineSecret } from 'firebase-functions/params'
 import * as crypto from 'crypto'
+
+const paynowId = defineSecret('PAYNOW_INTEGRATION_ID')
+const paynowKey = defineSecret('PAYNOW_INTEGRATION_KEY')
 import {
   creditReferralBonus,
   creditGrandparentBonus,
@@ -383,7 +387,7 @@ export const updateLocationStats = onDocumentUpdated(
   }
 )
 
-export const processPaynowPayment = onCall(async (request) => {
+export const processPaynowPayment = onCall({ secrets: [paynowId, paynowKey] }, async (request) => {
   const { bookingId, email } = request.data
   if (!request.auth?.uid) throw new HttpsError('unauthenticated', 'Sign in to pay for this booking.')
   if (!bookingId) throw new HttpsError('invalid-argument', 'Missing bookingId')
@@ -410,8 +414,8 @@ export const processPaynowPayment = onCall(async (request) => {
   }
 
   const paynowConfig = {
-    integrationId: process.env.PAYNOW_INTEGRATION_ID || '',
-    integrationKey: process.env.PAYNOW_INTEGRATION_KEY || '',
+    integrationId: paynowId.value(),
+    integrationKey: paynowKey.value(),
     resultUrl: `${getFunctionBaseUrl()}/paynowCallback`,
     returnUrl: `${getSiteUrl()}/book/${booking.workerSlug || booking.workerId}/confirmation?bookingId=${bookingId}`,
   }
@@ -535,7 +539,7 @@ export const pollPaynowPayment = onCall(async (request) => {
   }
 })
 
-export const paynowCallback = onRequest(async (req, res) => {
+export const paynowCallback = onRequest({ secrets: [paynowKey] }, async (req, res) => {
   const rawBody =
     typeof req.body === 'string'
       ? req.body
@@ -550,7 +554,7 @@ export const paynowCallback = onRequest(async (req, res) => {
     return
   }
 
-  const integrationKey = process.env.PAYNOW_INTEGRATION_KEY || ''
+  const integrationKey = paynowKey.value()
   if (integrationKey && hash) {
     const amount = getPaynowParam(params, 'amount')
     const pollUrl = getPaynowParam(params, 'pollurl')
@@ -791,7 +795,7 @@ export const payoutCallback = onRequest(async (req, res) => {
   res.status(200).send('OK')
 })
 
-export const processPayout = onCall(async (request) => {
+export const processPayout = onCall({ secrets: [paynowId, paynowKey] }, async (request) => {
   const { payoutId } = request.data
   if (!request.auth?.uid) throw new HttpsError('unauthenticated', 'Sign in to process payouts.')
   if (!payoutId) throw new HttpsError('invalid-argument', 'Missing payoutId')
@@ -810,8 +814,8 @@ export const processPayout = onCall(async (request) => {
     return { success: false, error: `Payout is already ${payout.status}` }
   }
 
-  const integrationId = process.env.PAYNOW_INTEGRATION_ID || ''
-  const integrationKey = process.env.PAYNOW_INTEGRATION_KEY || ''
+  const integrationId = paynowId.value()
+  const integrationKey = paynowKey.value()
   if (!integrationId || !integrationKey) {
     throw new HttpsError('failed-precondition', 'Paynow payout is not configured.')
   }
