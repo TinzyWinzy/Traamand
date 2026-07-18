@@ -3,7 +3,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Users, UserCircle, BookOpen, DollarSign,
   Menu, X, LogOut, Shield, UserPlus, Smartphone,
-  CheckCircle, Video,
+  CheckCircle, Video, GitCompareArrows,
 } from 'lucide-react'
 import { signOut } from 'firebase/auth'
 import { auth } from '../../firebase/config'
@@ -22,6 +22,7 @@ const NAV_SECTIONS: { label: string; items: { label: string; to: string; icon: a
       { label: 'Applicants', to: '/admin/applicants', icon: UserPlus },
       { label: 'Workers', to: '/admin/workers', icon: Users },
       { label: 'Bookings', to: '/admin/bookings', icon: BookOpen },
+      { label: 'Matches', to: '/admin/matches', icon: GitCompareArrows },
       { label: 'Verifier Tasks', to: '/admin/tasks', icon: CheckCircle },
     ],
   },

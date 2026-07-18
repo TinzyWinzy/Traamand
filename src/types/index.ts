@@ -241,11 +241,17 @@ export interface Applicant {
   position: string
   fullName: string
   phone: string
+  email: string
   age: number
   yearsOfExperience: number
   nextOfKinContact: string
   education: string
   primaryLanguage: string
+  additionalLanguages: string[]
+  serviceAreas: string[]
+  workType: WorkType
+  availabilityTimeline: string
+  bio: string
   photoUrl?: string
   introVideoUrl?: string
   nationalIdUrl: string

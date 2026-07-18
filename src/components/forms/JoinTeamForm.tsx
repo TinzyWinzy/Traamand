@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
-import { Check, Upload, Loader2, X, Video, Briefcase, Clock, Building2, TrendingUp } from 'lucide-react'
-import { EDUCATION_LEVELS, LANGUAGES, SERVICE_CATEGORIES } from '../../lib/constants'
-import { createApplicant, updateApplicant } from '../../firebase/firestore'
+import { Check, Upload, Loader2, X, Video, Briefcase, Clock, Building2, TrendingUp, Home, Zap, MessageCircle, MapPin, Languages, Search } from 'lucide-react'
+import { EDUCATION_LEVELS, LANGUAGES, SERVICE_CATEGORIES, SUBURBS_BY_REGION } from '../../lib/constants'
+import { createApplicant, updateApplicant, getApplicantsByPhone } from '../../firebase/firestore'
 import { uploadApplicantFile, uploadApplicantPhoto, uploadApplicantVideo, MAX_FILE_SIZE } from '../../lib/upload'
 import { useAuthStore } from '../../stores/authStore'
 import { doc, updateDoc } from 'firebase/firestore'
 import { db } from '../../firebase/config'
+import { getMatchingInquiries, type MatchResult } from '../../lib/matching'
+import { generateWhatsAppUrl } from '../../lib/whatsapp'
 
 const SELLING_POINTS = [
   { icon: Briefcase, text: 'Immediate Job Placement — quick matching with families and businesses looking for help.' },
@@ -14,26 +16,51 @@ const SELLING_POINTS = [
   { icon: TrendingUp, text: 'Good Pay Structures — we advocate for fair, market-rate wages for all placed workers.' },
 ]
 
+const WORK_TYPES = [
+  { value: 'live-in', label: 'Live-In', desc: 'Live at the employer\'s home', icon: Home },
+  { value: 'daily', label: 'Daily', desc: 'Work daily, go home after', icon: Clock },
+  { value: 'part-time', label: 'Part-Time', desc: 'Fewer hours per week', icon: Briefcase },
+  { value: 'temporary', label: 'Temporary', desc: 'Short-term assignments', icon: Zap },
+] as const
+
+const AVAILABILITY_OPTIONS = [
+  { value: 'immediately', label: 'Immediately' },
+  { value: '2_weeks', label: 'Within 2 Weeks' },
+  { value: '1_month', label: 'Within 1 Month' },
+] as const
+
 interface FormData {
   position: string
   fullName: string
   phone: string
+  email: string
   age: string
   yearsOfExperience: string
   nextOfKinContact: string
   education: string
   primaryLanguage: string
+  additionalLanguages: string[]
+  serviceAreas: string[]
+  workType: string
+  availabilityTimeline: string
+  bio: string
 }
 
 const INITIAL: FormData = {
   position: '',
   fullName: '',
   phone: '',
+  email: '',
   age: '',
   yearsOfExperience: '',
   nextOfKinContact: '',
   education: '',
   primaryLanguage: '',
+  additionalLanguages: [],
+  serviceAreas: [],
+  workType: '',
+  availabilityTimeline: '',
+  bio: '',
 }
 
 export default function JoinTeamForm() {
@@ -52,6 +79,8 @@ export default function JoinTeamForm() {
   const [submitted, setSubmitted] = useState(false)
   const [applicantRef, setApplicantRef] = useState('')
   const [submitError, setSubmitError] = useState('')
+  const [matches, setMatches] = useState<MatchResult[]>([])
+  const [loadingMatches, setLoadingMatches] = useState(false)
 
   useEffect(() => {
     return () => {
@@ -59,8 +88,33 @@ export default function JoinTeamForm() {
     }
   }, [photoPreview])
 
-  const update = (field: keyof FormData, value: string) => {
+  useEffect(() => {
+    if (!submitted || !applicantRef) return
+    setLoadingMatches(true)
+    getMatchingInquiries({
+      position: data.position,
+      serviceAreas: data.serviceAreas,
+      workType: data.workType,
+      yearsOfExperience: Number(data.yearsOfExperience),
+      availabilityTimeline: data.availabilityTimeline,
+    })
+      .then(setMatches)
+      .catch(() => {})
+      .finally(() => setLoadingMatches(false))
+  }, [submitted])
+
+  const update = (field: keyof FormData, value: string | string[]) => {
     setData((prev) => ({ ...prev, [field]: value }))
+    const key = field as string
+    if (errors[key]) setErrors((prev) => ({ ...prev, [key]: undefined }))
+  }
+
+  const toggleArrayField = (field: 'serviceAreas' | 'additionalLanguages', value: string) => {
+    setData((prev) => {
+      const arr = prev[field]
+      const next = arr.includes(value) ? arr.filter((v) => v !== value) : [...arr, value]
+      return { ...prev, [field]: next }
+    })
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }))
   }
 
@@ -72,11 +126,17 @@ export default function JoinTeamForm() {
     if (!data.phone.trim()) errs.phone = 'Phone number is required'
     else if (!/^0[0-9]{9}$/.test(data.phone.replace(/[\s-]/g, '')))
       errs.phone = 'Enter a valid Zimbabwe phone number'
+    if (!data.email.trim()) errs.email = 'Email is required'
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email))
+      errs.email = 'Enter a valid email address'
     if (!data.age.trim() || Number(data.age) < 18) errs.age = 'You must be at least 18 years old'
     if (!data.yearsOfExperience.trim()) errs.yearsOfExperience = 'Years of experience is required'
     if (!data.nextOfKinContact.trim()) errs.nextOfKinContact = 'Next of kin contact is required'
     if (!data.education) errs.education = 'Select your highest level of education'
     if (!data.primaryLanguage) errs.primaryLanguage = 'Select your primary language'
+    if (data.serviceAreas.length === 0) errs.serviceAreas = 'Select at least one service area'
+    if (!data.workType) errs.workType = 'Select your preferred work type'
+    if (!data.availabilityTimeline) errs.availabilityTimeline = 'Select when you can start'
     if (!nationalIdFile) errs.nationalId = 'National ID upload is required'
     if (!policeClearanceFile) errs.policeClearance = 'Police clearance upload is required'
 
@@ -88,6 +148,13 @@ export default function JoinTeamForm() {
     e.preventDefault()
     setDidValidate(true)
     if (!validate()) return
+
+    const existing = await getApplicantsByPhone(data.phone)
+    if (existing.length > 0) {
+      setErrors((prev) => ({ ...prev, phone: 'This phone number is already registered. Use a different number or contact us on WhatsApp.' }))
+      return
+    }
+
     setUploading(true)
     setSubmitError('')
     let createdApplicantId = ''
@@ -97,11 +164,17 @@ export default function JoinTeamForm() {
         position: data.position,
         fullName: data.fullName,
         phone: data.phone,
+        email: data.email,
         age: Number(data.age),
         yearsOfExperience: Number(data.yearsOfExperience),
         nextOfKinContact: data.nextOfKinContact,
         education: data.education,
         primaryLanguage: data.primaryLanguage,
+        additionalLanguages: data.additionalLanguages,
+        serviceAreas: data.serviceAreas,
+        workType: data.workType,
+        availabilityTimeline: data.availabilityTimeline,
+        bio: data.bio,
         nationalIdUrl: nationalIdFile?.name || '',
         policeClearanceUrl: policeClearanceFile?.name || '',
         documentUploadStatus: 'pending',
@@ -161,20 +234,102 @@ export default function JoinTeamForm() {
   }
 
   if (submitted) {
+    const waMessage = `Hi Traamand! I just applied as a ${data.position}. My ref is ${applicantRef.slice(0, 8)}. I'm available for ${data.workType} work in ${data.serviceAreas.join(', ')}. Keen to hear about matching jobs!`
+
     return (
-      <div className="rounded-2xl bg-white p-8 text-center shadow-md sm:p-12">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
-          <Check className="h-8 w-8 text-green-600" />
-        </div>
-        <h3 className="mt-6 text-2xl font-bold text-slate-900">Application Received!</h3>
-        <p className="mt-3 text-slate-500">
-          Thank you, {data.fullName}. We&apos;ll review your application and get back to you
-          within 48 hours.
-        </p>
-        {applicantRef && (
-          <p className="mt-4 text-xs text-slate-400">
-            Reference: <span className="font-mono font-semibold text-slate-600">{applicantRef.slice(0, 8)}</span>
+      <div className="space-y-6">
+        <div className="rounded-2xl bg-white p-8 text-center shadow-md sm:p-12">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+            <Check className="h-8 w-8 text-green-600" />
+          </div>
+          <h3 className="mt-6 text-2xl font-bold text-slate-900">Application Received!</h3>
+          <p className="mt-3 text-slate-500">
+            Thank you, {data.fullName}. We&apos;ll review your application and get back to you within 48 hours.
           </p>
+          {applicantRef && (
+            <p className="mt-4 text-xs text-slate-400">
+              Reference: <span className="font-mono font-semibold text-slate-600">{applicantRef.slice(0, 8)}</span>
+            </p>
+          )}
+
+          <a
+            href={generateWhatsAppUrl('+263783562678', waMessage)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-6 inline-flex items-center gap-2 rounded-lg bg-green-600 px-6 py-3 text-sm font-bold text-white transition hover:bg-green-700 active:scale-[0.98]"
+          >
+            <MessageCircle className="h-4 w-4" />
+            Follow Up on WhatsApp
+          </a>
+        </div>
+
+        {loadingMatches && (
+          <div className="flex items-center justify-center gap-2 rounded-2xl bg-white py-8 shadow-md">
+            <Loader2 className="h-5 w-5 animate-spin text-teal-600" />
+            <span className="text-sm text-slate-500">Finding matching jobs for you...</span>
+          </div>
+        )}
+
+        {!loadingMatches && matches.length > 0 && (
+          <div className="rounded-2xl bg-white p-6 shadow-md sm:p-8">
+            <div className="mb-5 flex items-center gap-2">
+              <Search className="h-5 w-5 text-teal-600" />
+              <h3 className="text-lg font-bold text-slate-900">Matching Opportunities</h3>
+            </div>
+            <p className="mb-4 text-sm text-slate-500">
+              We found some job openings that match your profile. Click to enquire.
+            </p>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {matches.map((m) => (
+                <div
+                  key={m.booking.id}
+                  className="rounded-xl border border-slate-100 bg-slate-50 p-4 transition hover:border-teal-200 hover:shadow-sm"
+                >
+                  <div className="mb-2 flex items-start justify-between">
+                    <div>
+                      <p className="font-semibold text-slate-900">{m.booking.serviceType}</p>
+                      <p className="text-xs text-slate-500">
+                        <MapPin className="mr-0.5 inline-block h-3 w-3" />
+                        {m.booking.clientAddress.suburb}, {m.booking.clientAddress.city}
+                      </p>
+                    </div>
+                    <span
+                      className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-bold ${
+                        m.score >= 70
+                          ? 'bg-green-100 text-green-700'
+                          : m.score >= 40
+                            ? 'bg-yellow-100 text-yellow-700'
+                            : 'bg-red-100 text-red-700'
+                      }`}
+                    >
+                      {m.score}% fit
+                    </span>
+                  </div>
+                  <p className="mb-3 text-xs capitalize text-slate-500">{m.booking.workType}</p>
+                  <a
+                    href={generateWhatsAppUrl(
+                      '+263783562678',
+                      `Hi Traamand! I applied as a ${data.position} (ref: ${applicantRef.slice(0, 8)}) and I'm interested in the ${m.booking.serviceType} job in ${m.booking.clientAddress.suburb}. Can you tell me more?`,
+                    )}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-teal-600 px-4 py-2 text-xs font-bold text-white transition hover:bg-teal-700 active:scale-[0.98]"
+                  >
+                    <MessageCircle className="h-3.5 w-3.5" />
+                    Enquire About This Job
+                  </a>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {!loadingMatches && matches.length === 0 && (
+          <div className="rounded-2xl bg-white p-6 text-center shadow-md sm:p-8">
+            <p className="text-sm text-slate-500">
+              No matching jobs right now — we&apos;ll contact you as soon as one opens up for your profile.
+            </p>
+          </div>
         )}
       </div>
     )
@@ -215,7 +370,7 @@ export default function JoinTeamForm() {
             </select>
           </Field>
 
-          <div className="grid gap-5 sm:grid-cols-2">
+          <div className="grid gap-5 sm:grid-cols-3">
             <Field label="Full Name" error={didValidate ? errors.fullName : undefined}>
               <input
                 type="text"
@@ -233,6 +388,16 @@ export default function JoinTeamForm() {
                 onChange={(e) => update('phone', e.target.value)}
                 placeholder="e.g. 0772 123 456"
                 autoComplete="tel"
+                className="w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+              />
+            </Field>
+            <Field label="Email" error={didValidate ? errors.email : undefined}>
+              <input
+                type="email"
+                value={data.email}
+                onChange={(e) => update('email', e.target.value)}
+                placeholder="e.g. chido@email.com"
+                autoComplete="email"
                 className="w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
               />
             </Field>
@@ -265,16 +430,15 @@ export default function JoinTeamForm() {
           </div>
 
           <div className="grid gap-5 sm:grid-cols-2">
-            <Field label="Highest Level of Education" error={didValidate ? errors.education : undefined}>
+            <Field label="Highest Education" error={didValidate ? errors.education : undefined}>
               <select
                 value={data.education}
                 onChange={(e) => update('education', e.target.value)}
-                autoComplete="education"
                 className="w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
               >
                 <option value="">Select education</option>
-                {EDUCATION_LEVELS.map((lvl) => (
-                  <option key={lvl} value={lvl}>{lvl}</option>
+                {EDUCATION_LEVELS.map((level) => (
+                  <option key={level} value={level}>{level}</option>
                 ))}
               </select>
             </Field>
@@ -291,6 +455,134 @@ export default function JoinTeamForm() {
                 ))}
               </select>
             </Field>
+          </div>
+
+          <Field label="Additional Languages" error={didValidate ? errors.additionalLanguages : undefined}>
+            <div className="flex flex-wrap gap-2">
+              {LANGUAGES.map((lang) => {
+                const active = data.additionalLanguages.includes(lang)
+                return (
+                  <button
+                    key={lang}
+                    type="button"
+                    onClick={() => toggleArrayField('additionalLanguages', lang)}
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-medium transition ${
+                      active
+                        ? 'border-teal-600 bg-teal-50 text-teal-700'
+                        : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                    }`}
+                  >
+                    {active && <Check className="h-3 w-3" />}
+                    {lang}
+                  </button>
+                )
+              })}
+            </div>
+          </Field>
+
+          <div className="border-t border-slate-100 pt-6">
+            <h3 className="mb-1 text-lg font-bold text-slate-900">Work Preferences</h3>
+            <p className="mb-4 text-sm text-slate-500">Help us match you with the right jobs</p>
+
+            <Field label="Service Areas" error={didValidate ? errors.serviceAreas : undefined}>
+              <div className="max-h-60 space-y-3 overflow-y-auto rounded-lg border border-slate-200 p-4">
+                {Object.entries(SUBURBS_BY_REGION).map(([region, suburbs]) => (
+                  <div key={region}>
+                    <p className="mb-1.5 text-xs font-semibold uppercase text-slate-400">{region}</p>
+                    <div className="flex flex-wrap gap-2">
+                      {suburbs.map((suburb) => {
+                        const active = data.serviceAreas.includes(suburb)
+                        return (
+                          <button
+                            key={suburb}
+                            type="button"
+                            onClick={() => toggleArrayField('serviceAreas', suburb)}
+                            className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition ${
+                              active
+                                ? 'border-teal-600 bg-teal-50 text-teal-700'
+                                : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                            }`}
+                          >
+                            <MapPin className="h-3 w-3" />
+                            {active && <Check className="h-3 w-3" />}
+                            {suburb}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Field>
+
+            <div className="mt-5">
+              <Field label="Preferred Work Type" error={didValidate ? errors.workType : undefined}>
+                <div className="grid grid-cols-2 gap-3">
+                  {WORK_TYPES.map((wt) => {
+                    const active = data.workType === wt.value
+                    const Icon = wt.icon
+                    return (
+                      <button
+                        key={wt.value}
+                        type="button"
+                        onClick={() => update('workType', wt.value)}
+                        className={`flex items-start gap-3 rounded-xl border p-4 text-left transition ${
+                          active
+                            ? 'border-teal-600 bg-teal-50 ring-2 ring-teal-600/20'
+                            : 'border-slate-200 bg-white hover:border-slate-300'
+                        }`}
+                      >
+                        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
+                          active ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-500'
+                        }`}>
+                          <Icon className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <p className={`text-sm font-bold ${active ? 'text-teal-800' : 'text-slate-800'}`}>{wt.label}</p>
+                          <p className="mt-0.5 text-xs text-slate-500">{wt.desc}</p>
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+              </Field>
+            </div>
+
+            <div className="mt-5">
+              <Field label="Availability" error={didValidate ? errors.availabilityTimeline : undefined}>
+                <div className="flex flex-wrap gap-2">
+                  {AVAILABILITY_OPTIONS.map((opt) => {
+                    const active = data.availabilityTimeline === opt.value
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => update('availabilityTimeline', opt.value)}
+                        className={`rounded-full border px-5 py-2 text-sm font-medium transition ${
+                          active
+                            ? 'border-teal-600 bg-teal-50 text-teal-700'
+                            : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    )
+                  })}
+                </div>
+              </Field>
+            </div>
+
+            <div className="mt-5">
+              <Field label="Tell us about yourself (optional)">
+                <textarea
+                  value={data.bio}
+                  onChange={(e) => update('bio', e.target.value)}
+                  placeholder="Briefly describe your experience, skills, and what kind of work you're looking for..."
+                  rows={4}
+                  className="w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+                />
+              </Field>
+            </div>
           </div>
 
           <Field label="Next of Kin Contact" error={didValidate ? errors.nextOfKinContact : undefined}>

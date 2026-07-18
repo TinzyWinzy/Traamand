@@ -4,6 +4,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 vi.mock('../firebase/firestore', () => ({
   createApplicant: vi.fn().mockResolvedValue('mock-applicant-id'),
   updateApplicant: vi.fn().mockResolvedValue(undefined),
+  getApplicantsByPhone: vi.fn().mockResolvedValue([]),
 }))
 
 vi.mock('../lib/upload', () => ({
@@ -11,6 +12,10 @@ vi.mock('../lib/upload', () => ({
   uploadApplicantFile: vi.fn().mockResolvedValue('https://storage.example/applicant-file.pdf'),
   uploadApplicantPhoto: vi.fn().mockResolvedValue('https://storage.example/photo.jpg'),
   uploadApplicantVideo: vi.fn().mockResolvedValue('https://storage.example/intro.mp4'),
+}))
+
+vi.mock('../lib/matching', () => ({
+  getMatchingInquiries: vi.fn().mockResolvedValue([]),
 }))
 
 describe('JoinTeamForm', () => {
@@ -28,9 +33,14 @@ describe('JoinTeamForm', () => {
     expect(screen.getByText('Phone Number')).toBeInTheDocument()
     expect(screen.getByText('Age')).toBeInTheDocument()
     expect(screen.getByText('Years of Experience')).toBeInTheDocument()
-    expect(screen.getByText('Highest Level of Education')).toBeInTheDocument()
+    expect(screen.getByText('Highest Education')).toBeInTheDocument()
     expect(screen.getByText('Primary Language')).toBeInTheDocument()
     expect(screen.getByText('Next of Kin Contact')).toBeInTheDocument()
+    expect(screen.getByText('Email')).toBeInTheDocument()
+    expect(screen.getByText('Work Preferences')).toBeInTheDocument()
+    expect(screen.getByText('Service Areas')).toBeInTheDocument()
+    expect(screen.getByText('Preferred Work Type')).toBeInTheDocument()
+    expect(screen.getByText('Availability')).toBeInTheDocument()
   })
 
   it('renders profile photo and intro video sections', async () => {
@@ -81,15 +91,26 @@ describe('JoinTeamForm', () => {
     const { default: JoinTeamForm } = await import('../components/forms/JoinTeamForm')
     render(<JoinTeamForm />)
 
-    const combos = screen.getAllByRole('combobox')
-    fireEvent.change(combos[0], { target: { value: 'Maid' } })
-    fireEvent.change(combos[1], { target: { value: 'Primary' } })
-    fireEvent.change(combos[2], { target: { value: 'Shona' } })
     fireEvent.change(screen.getByPlaceholderText(/e\.g\. Chido Dube/i), { target: { value: 'Test Person' } })
     fireEvent.change(screen.getByPlaceholderText(/e\.g\. 0772/i), { target: { value: '0772123456' } })
+    fireEvent.change(screen.getByPlaceholderText(/e\.g\. chido@email/i), { target: { value: 'test@email.com' } })
     fireEvent.change(screen.getByPlaceholderText(/e\.g\. 28/i), { target: { value: '30' } })
     fireEvent.change(screen.getByPlaceholderText(/e\.g\. 5/i), { target: { value: '5' } })
     fireEvent.change(screen.getByPlaceholderText(/name and phone number/i), { target: { value: 'Mother - 0773123456' } })
+
+    const selectElements = screen.getAllByRole('combobox')
+    fireEvent.change(selectElements[0], { target: { value: 'Maid' } })
+    fireEvent.change(selectElements[1], { target: { value: 'Primary' } })
+    fireEvent.change(selectElements[2], { target: { value: 'Shona' } })
+
+    const areaBtn = screen.getByRole('button', { name: /Borrowdale/i })
+    fireEvent.click(areaBtn)
+
+    const workTypeBtn = screen.getByRole('button', { name: /Live-In/i })
+    fireEvent.click(workTypeBtn)
+
+    const availBtn = screen.getByRole('button', { name: /Immediately/i })
+    fireEvent.click(availBtn)
 
     const fileInputs = document.querySelectorAll('input[type="file"]')
     const pdfFile = new File(['dummy'], 'id.pdf', { type: 'application/pdf' })

@@ -38,6 +38,7 @@ const AdminUsers = lazyWithRetry(() => import('./pages/admin/users/AdminUsers'))
 const AdminPayouts = lazyWithRetry(() => import('./pages/admin/payouts/AdminPayouts'))
 const AdminCreatorSubmissions = lazyWithRetry(() => import('./pages/admin/content/AdminCreatorSubmissions'))
 const AdminVerifierTasks = lazyWithRetry(() => import('./pages/admin/tasks/AdminVerifierTasks'))
+const AdminMatches = lazyWithRetry(() => import('./pages/admin/matches/AdminMatches'))
 const AdminSignIn = lazyWithRetry(() => import('./pages/admin/AdminSignIn'))
 const VerifierSignIn = lazyWithRetry(() => import('./pages/verifier/VerifierSignIn'))
 const CreatorSignIn = lazyWithRetry(() => import('./pages/creator/CreatorSignIn'))
@@ -227,6 +228,7 @@ export default function App() {
             <Route path="payouts" element={<AdminPayouts />} />
             <Route path="content" element={<AdminCreatorSubmissions />} />
             <Route path="tasks" element={<AdminVerifierTasks />} />
+            <Route path="matches" element={<AdminMatches />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
