@@ -41,7 +41,7 @@ vi.mock('../firebase/config', () => ({
   auth: {},
   storage: {},
   functions: {},
-  vertexAI: {} as any,
+  ai: {} as any,
 }))
 
 vi.mock('../lib/whatsapp', () => ({

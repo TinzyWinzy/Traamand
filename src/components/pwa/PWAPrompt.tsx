@@ -10,6 +10,15 @@ function useIsIOS() {
   return isIOS
 }
 
+function useIsSafari() {
+  const [isSafari] = useState(() => {
+    if (typeof window === 'undefined') return false
+    const ua = navigator.userAgent
+    return ua.includes('Safari') && !ua.includes('Chrome') && !ua.includes('CriOS')
+  })
+  return isSafari
+}
+
 function useIsStandalone() {
   const [standalone] = useState(() => {
     if (typeof window === 'undefined') return false
@@ -30,10 +39,11 @@ function useIsSWActive() {
 
 export default function PWAPrompt() {
   const isIOS = useIsIOS()
+  const isSafari = useIsSafari()
   const isStandalone = useIsStandalone()
   const isSWActive = useIsSWActive()
 
-  const [mode, setMode] = useState<'beforeinstallprompt' | 'ios' | 'generic' | null>(null)
+  const [mode, setMode] = useState<'beforeinstallprompt' | 'ios' | 'ios-non-safari' | 'generic' | null>(null)
   const [deferredPrompt, setDeferredPrompt] = useState<unknown>(null)
   const [dismissed, setDismissed] = useState(false)
   const dismissedRef = useRef(false)
@@ -41,9 +51,17 @@ export default function PWAPrompt() {
   useEffect(() => {
     const stored = localStorage.getItem('pwa-prompt-dismissed')
     if (stored) {
-      setDismissed(true)
-      dismissedRef.current = true
-      return
+      const dismissedTime = parseInt(stored, 10)
+      if (!isNaN(dismissedTime)) {
+        const elapsed = Date.now() - dismissedTime
+        const daysElapsed = elapsed / (1000 * 60 * 60 * 24)
+        if (daysElapsed < 7) {
+          setDismissed(true)
+          dismissedRef.current = true
+          return
+        }
+      }
+      localStorage.removeItem('pwa-prompt-dismissed')
     }
 
     let fallbackTimer: ReturnType<typeof setTimeout>
@@ -57,7 +75,11 @@ export default function PWAPrompt() {
 
     window.addEventListener('beforeinstallprompt', handler)
 
-    if (isIOS) {
+    if (isIOS && !isSafari) {
+      fallbackTimer = setTimeout(() => {
+        if (!dismissedRef.current) setMode('ios-non-safari')
+      }, 3000)
+    } else if (isIOS) {
       fallbackTimer = setTimeout(() => {
         if (!dismissedRef.current) setMode('ios')
       }, 3000)
@@ -71,7 +93,7 @@ export default function PWAPrompt() {
       window.removeEventListener('beforeinstallprompt', handler)
       clearTimeout(fallbackTimer)
     }
-  }, [isIOS])
+  }, [isIOS, isSafari])
 
   const handleInstall = async () => {
     if (deferredPrompt) {
@@ -88,7 +110,7 @@ export default function PWAPrompt() {
     setMode(null)
     setDismissed(true)
     dismissedRef.current = true
-    localStorage.setItem('pwa-prompt-dismissed', '1')
+    localStorage.setItem('pwa-prompt-dismissed', Date.now().toString())
   }
 
   const handleRefresh = () => {
@@ -98,7 +120,7 @@ export default function PWAPrompt() {
   if (!mode || isStandalone) return null
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 p-4 sm:bottom-4 sm:left-4 sm:right-auto sm:max-w-sm">
+    <div className={`fixed left-0 right-0 z-50 p-4 sm:max-w-sm ${isIOS ? 'top-0 sm:top-4' : 'bottom-0 sm:bottom-4 sm:left-4 sm:right-auto'}`}>
       <div className="relative rounded-2xl bg-brand-navy p-5 text-white shadow-2xl">
         <button
           onClick={handleDismiss}
@@ -159,6 +181,25 @@ export default function PWAPrompt() {
                 Tap <strong className="text-white">Add</strong> in the top right
               </li>
             </ol>
+            <div className="mt-4">
+              <button
+                onClick={handleDismiss}
+                className="w-full rounded-lg px-4 py-2.5 text-sm font-medium text-white/50 transition hover:text-white"
+              >
+                Got it
+              </button>
+            </div>
+          </>
+        )}
+
+        {mode === 'ios-non-safari' && (
+          <>
+            <p className="mt-3 text-xs text-white/70">
+              To install Traamand on your home screen, open this page in <strong className="text-white">Safari</strong>.
+            </p>
+            <div className="mt-3 text-xs text-white/50">
+              <p>Chrome and Firefox on iPhone/iPad don't support app installation.</p>
+            </div>
             <div className="mt-4">
               <button
                 onClick={handleDismiss}

@@ -1,12 +1,12 @@
-import { getGenerativeModel } from '@firebase/vertexai'
-import { vertexAI } from '../firebase/config'
+import { getGenerativeModel } from 'firebase/ai'
+import { ai } from '../firebase/config'
 import type { DocumentVerification, ApplicantVerification } from '../types'
 
 let model: ReturnType<typeof getGenerativeModel> | null = null
 
 function getModel() {
   if (!model) {
-    model = getGenerativeModel(vertexAI, { model: 'gemini-1.5-flash' })
+    model = getGenerativeModel(ai, { model: 'gemini-1.5-flash' })
   }
   return model
 }

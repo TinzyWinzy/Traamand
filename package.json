@@ -14,7 +14,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@firebase/vertexai": "^1.2.4",
     "@hookform/resolvers": "^5.4.0",
     "@types/leaflet": "^1.9.21",
     "firebase": "^12.16.0",
