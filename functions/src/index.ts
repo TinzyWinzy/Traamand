@@ -2,6 +2,7 @@ import * as admin from 'firebase-admin'
 import { onDocumentCreated, onDocumentUpdated } from 'firebase-functions/v2/firestore'
 import { HttpsError, onCall, onRequest } from 'firebase-functions/v2/https'
 import { setGlobalOptions } from 'firebase-functions/v2'
+import * as crypto from 'crypto'
 import {
   creditReferralBonus,
   creditGrandparentBonus,
@@ -19,6 +20,10 @@ setGlobalOptions({ region: 'us-central1' })
 
 const ACTIVE_BOOKING_STATUSES = ['inquiry', 'matched', 'booked', 'placement_fee_paid', 'worker_assigned', 'started']
 
+const PLATFORM_FEE_PERCENT = 0.15
+const TRAAMAND_REVENUE_PERCENT = 0.85
+const PAYOUT_FEE_PERCENT = 0.02
+
 function getFunctionBaseUrl() {
   return (
     process.env.FUNCTIONS_URL ||
@@ -35,19 +40,53 @@ function getPaynowParam(params: URLSearchParams, key: string) {
 }
 
 async function writePlacementFeeTransaction(bookingId: string, booking: FirebaseFirestore.DocumentData) {
-  const txnRef = db.collection('transactions').doc(`placement_fee_${bookingId}`)
-  const txnSnap = await txnRef.get()
-  if (txnSnap.exists) return
+  const fee = booking.placementFee || 0
+  const platformCut = Math.round(fee * PLATFORM_FEE_PERCENT * 100) / 100
+  const traamandNet = Math.round(fee * TRAAMAND_REVENUE_PERCENT * 100) / 100
 
-  await txnRef.set({
-    userId: booking.clientId,
-    type: 'placement_fee',
-    amount: booking.placementFee || 0,
-    balance: 0,
-    reference: bookingId,
-    description: `Placement fee paid for booking ${bookingId.slice(0, 8)}`,
-    status: 'completed',
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+  const platformRef = db.collection('transactions').doc(`platform_fee_${bookingId}`)
+  const revenueRef = db.collection('transactions').doc(`traamand_revenue_${bookingId}`)
+  const [platformSnap, revenueSnap] = await Promise.all([platformRef.get(), revenueRef.get()])
+  if (platformSnap.exists && revenueSnap.exists) return
+
+  const ts = admin.firestore.FieldValue.serverTimestamp()
+  const batch = db.batch()
+
+  if (!platformSnap.exists) {
+    batch.set(platformRef, {
+      userId: 'radbit_studios',
+      type: 'platform_fee',
+      amount: platformCut,
+      balance: 0,
+      reference: bookingId,
+      description: `Radbit Studios platform fee (${PLATFORM_FEE_PERCENT * 100}%) for booking ${bookingId.slice(0, 8)}`,
+      status: 'completed',
+      createdAt: ts,
+    })
+  }
+
+  if (!revenueSnap.exists) {
+    batch.set(revenueRef, {
+      userId: booking.clientId,
+      type: 'traamand_revenue',
+      amount: traamandNet,
+      balance: 0,
+      reference: bookingId,
+      description: `Traamand net revenue (${TRAAMAND_REVENUE_PERCENT * 100}%) for booking ${bookingId.slice(0, 8)}`,
+      status: 'completed',
+      createdAt: ts,
+    })
+  }
+
+  await batch.commit()
+
+  await bookingDocUpdate(bookingId, { platformCutAmount: platformCut, traamandNetRevenue: traamandNet })
+}
+
+async function bookingDocUpdate(id: string, data: Record<string, unknown>) {
+  await db.collection('bookings').doc(id).update({
+    ...data,
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
   })
 }
 
@@ -415,10 +454,14 @@ export const processPaynowPayment = onCall(async (request) => {
     const browserUrl = getPaynowParam(params, 'BrowserUrl')
 
     if (pollUrl && browserUrl) {
+      const fee = Number(booking.placementFee || 0)
       await bookingRef.update({
         paynowPollUrl: pollUrl,
         paynowReference: reference,
         paynowStatus: 'pending',
+        platformFeePercent: PLATFORM_FEE_PERCENT,
+        platformCutAmount: Math.round(fee * PLATFORM_FEE_PERCENT * 100) / 100,
+        traamandNetRevenue: Math.round(fee * TRAAMAND_REVENUE_PERCENT * 100) / 100,
         paynowInitiatedAt: admin.firestore.FieldValue.serverTimestamp(),
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       })
@@ -500,10 +543,23 @@ export const paynowCallback = onRequest(async (req, res) => {
   const params = new URLSearchParams(req.method === 'GET' ? (req.url.split('?')[1] || '') : rawBody)
   const reference = getPaynowParam(params, 'reference')
   const status = getPaynowParam(params, 'status') || 'unknown'
+  const hash = getPaynowParam(params, 'hash')
 
   if (!reference.startsWith('TRA-')) {
     res.status(400).send('Invalid reference')
     return
+  }
+
+  const integrationKey = process.env.PAYNOW_INTEGRATION_KEY || ''
+  if (integrationKey && hash) {
+    const amount = getPaynowParam(params, 'amount')
+    const pollUrl = getPaynowParam(params, 'pollurl')
+    const expected = crypto.createHash('md5').update(integrationKey + reference + amount + status.toLowerCase() + pollUrl).digest('hex')
+    if (expected.toLowerCase() !== hash.toLowerCase()) {
+      console.error(`HMAC mismatch for ${reference}: expected ${expected}, got ${hash}`)
+      res.status(403).send('Invalid hash')
+      return
+    }
   }
 
   const bookingPrefix = reference.replace(/^TRA-/, '').toLowerCase()
@@ -694,3 +750,131 @@ export const onUserCreated = onDocumentCreated(
     })
   }
 )
+
+export const payoutCallback = onRequest(async (req, res) => {
+  const rawBody =
+    typeof req.body === 'string'
+      ? req.body
+      : new URLSearchParams((req.body || {}) as Record<string, string>).toString()
+  const params = new URLSearchParams(req.method === 'GET' ? (req.url.split('?')[1] || '') : rawBody)
+  const reference = getPaynowParam(params, 'reference')
+  const status = getPaynowParam(params, 'status') || 'unknown'
+
+  if (!reference.startsWith('PAY-')) {
+    res.status(400).send('Invalid reference')
+    return
+  }
+
+  const payoutPrefix = reference.replace(/^PAY-/, '').toLowerCase()
+  const snap = await db.collection('payouts').where('notes', '>=', reference).where('notes', '<=', reference + '\uf8ff').limit(1).get()
+  const payoutDoc = snap.docs[0] || (await db.collection('payouts').get()).docs.find((doc) => doc.id.toLowerCase().startsWith(payoutPrefix))
+
+  if (!payoutDoc) {
+    res.status(404).send('Payout not found')
+    return
+  }
+
+  const paid = status.toLowerCase() === 'paid'
+  if (paid) {
+    await payoutDoc.ref.update({
+      status: 'completed',
+      completedAt: admin.firestore.FieldValue.serverTimestamp(),
+      notes: `Paynow confirmed: ${reference}`,
+    })
+  } else {
+    await payoutDoc.ref.update({
+      status: 'pending',
+      notes: `Paynow status: ${status}`,
+    })
+  }
+
+  res.status(200).send('OK')
+})
+
+export const processPayout = onCall(async (request) => {
+  const { payoutId } = request.data
+  if (!request.auth?.uid) throw new HttpsError('unauthenticated', 'Sign in to process payouts.')
+  if (!payoutId) throw new HttpsError('invalid-argument', 'Missing payoutId')
+
+  const userSnap = await db.collection('users').doc(request.auth.uid).get()
+  if (userSnap.data()?.role !== 'admin') {
+    throw new HttpsError('permission-denied', 'Only admins can process payouts.')
+  }
+
+  const payoutRef = db.collection('payouts').doc(payoutId)
+  const payoutSnap = await payoutRef.get()
+  if (!payoutSnap.exists) throw new HttpsError('not-found', 'Payout not found')
+
+  const payout = payoutSnap.data()!
+  if (payout.status !== 'pending') {
+    return { success: false, error: `Payout is already ${payout.status}` }
+  }
+
+  const integrationId = process.env.PAYNOW_INTEGRATION_ID || ''
+  const integrationKey = process.env.PAYNOW_INTEGRATION_KEY || ''
+  if (!integrationId || !integrationKey) {
+    throw new HttpsError('failed-precondition', 'Paynow payout is not configured.')
+  }
+
+  const amount = Number(payout.amount) || 0
+  if (amount <= 0) throw new HttpsError('invalid-argument', 'Invalid payout amount')
+
+  const fee = Math.round(amount * PAYOUT_FEE_PERCENT * 100) / 100
+  const netAmount = amount - fee
+  const reference = `PAY-${payoutId.slice(0, 8).toUpperCase()}`
+  const recipientPhone = payout.recipient.replace(/[^0-9]/g, '')
+
+  await payoutRef.update({
+    status: 'processing',
+    fee,
+    notes: `Processing via Paynow payout: ${reference}`,
+  })
+
+  try {
+    const body = new URLSearchParams({
+      id: integrationId,
+      reference,
+      amount: netAmount.toFixed(2),
+      additionalinfo: `Traamand payout ${payoutId.slice(0, 8)}`,
+      returnurl: getFunctionBaseUrl() + '/paynowCallback',
+      resulturl: getFunctionBaseUrl() + '/payoutCallback',
+      authemail: 'payouts@traamand.co.zw',
+      phone: recipientPhone,
+      method: 'ecocash',
+      status: 'Message',
+    })
+
+    const response = await fetch('https://www.paynow.co.zw/interface/initiatetransaction', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body,
+    })
+
+    const text = await response.text()
+    const result = new URLSearchParams(text)
+    const paynowStatus = getPaynowParam(result, 'status')
+
+    if (paynowStatus.toLowerCase() === 'ok') {
+      const paynowReference = getPaynowParam(result, 'reference') || reference
+      await payoutRef.update({
+        status: 'completed',
+        notes: `Paid via Paynow ref: ${paynowReference} (fee: $${fee})`,
+        completedAt: admin.firestore.FieldValue.serverTimestamp(),
+      })
+      return { success: true, reference: paynowReference, netAmount, fee }
+    }
+
+    const error = getPaynowParam(result, 'error') || text.slice(0, 300)
+    await payoutRef.update({
+      status: 'pending',
+      notes: `Paynow error: ${error}`,
+    })
+    return { success: false, error }
+  } catch (err) {
+    await payoutRef.update({
+      status: 'pending',
+      notes: `Exception: ${(err as Error).message}`,
+    })
+    return { success: false, error: (err as Error).message }
+  }
+})

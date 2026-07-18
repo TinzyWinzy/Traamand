@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Menu, Phone, MapPin, Shield, X, LogOut, ChevronDown, LayoutDashboard, CheckCircle2, Briefcase, FileText, Gift, PenTool, HandshakeIcon } from 'lucide-react'
+import { Menu, Phone, MapPin, Shield, X, LogOut, ChevronDown, LayoutDashboard, CheckCircle2, Briefcase, FileText, Gift, PenTool, HandshakeIcon, DollarSign } from 'lucide-react'
 import { NAV_LINKS, PRIMARY_PHONE, ADDRESS } from '../../lib/constants'
 import { useAuthStore } from '../../stores/authStore'
 import { logout } from '../../firebase/auth'
@@ -150,6 +150,16 @@ export default function Navbar() {
                         >
                           <Briefcase className="h-4 w-4" />
                           My Hires
+                        </Link>
+
+                        {/* My Payments */}
+                        <Link
+                          to="/my-payments"
+                          onClick={() => setDropdownOpen(false)}
+                          className="flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
+                        >
+                          <DollarSign className="h-4 w-4" />
+                          My Payments
                         </Link>
 
                         {/* My Application */}
@@ -327,6 +337,13 @@ export default function Navbar() {
                     className="block rounded-xl px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                   >
                     My Hires
+                  </Link>
+                  <Link
+                    to="/my-payments"
+                    onClick={closeDrawer}
+                    className="block rounded-xl px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                  >
+                    My Payments
                   </Link>
                   {user.role === 'client' && (
                     <Link

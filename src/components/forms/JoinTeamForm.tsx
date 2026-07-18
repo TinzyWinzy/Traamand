@@ -7,6 +7,7 @@ import { useAuthStore } from '../../stores/authStore'
 import { doc, updateDoc } from 'firebase/firestore'
 import { db } from '../../firebase/config'
 import { getMatchingInquiries, type MatchResult } from '../../lib/matching'
+import type { WorkType } from '../../types'
 import { generateWhatsAppUrl } from '../../lib/whatsapp'
 
 const SELLING_POINTS = [
@@ -172,7 +173,7 @@ export default function JoinTeamForm() {
         primaryLanguage: data.primaryLanguage,
         additionalLanguages: data.additionalLanguages,
         serviceAreas: data.serviceAreas,
-        workType: data.workType,
+        workType: data.workType as WorkType,
         availabilityTimeline: data.availabilityTimeline,
         bio: data.bio,
         nationalIdUrl: nationalIdFile?.name || '',

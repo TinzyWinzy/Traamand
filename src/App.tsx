@@ -47,6 +47,8 @@ const AdvertiseSignIn = lazyWithRetry(() => import('./pages/advertise/AdvertiseS
 const ApplicantSignIn = lazyWithRetry(() => import('./pages/applicant/ApplicantSignIn'))
 const ApplicantDashboard = lazyWithRetry(() => import('./pages/applicant/ApplicantDashboard'))
 const ClientDashboard = lazyWithRetry(() => import('./pages/client/ClientDashboard'))
+const MyPayments = lazyWithRetry(() => import('./pages/my-payments/MyPayments'))
+const AdminReconciliation = lazyWithRetry(() => import('./pages/admin/reconciliation/AdminReconciliation'))
 
 function AuthRoute({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate()
@@ -183,6 +185,14 @@ export default function App() {
             }
           />
           <Route
+            path="/my-payments"
+            element={
+              <AuthRoute>
+                <MyPayments />
+              </AuthRoute>
+            }
+          />
+          <Route
             path="/applicant"
             element={
               <ApplicantRoute>
@@ -229,6 +239,7 @@ export default function App() {
             <Route path="content" element={<AdminCreatorSubmissions />} />
             <Route path="tasks" element={<AdminVerifierTasks />} />
             <Route path="matches" element={<AdminMatches />} />
+            <Route path="reconciliation" element={<AdminReconciliation />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

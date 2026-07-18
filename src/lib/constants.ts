@@ -104,6 +104,13 @@ export const CATEGORIES: CategoryMeta[] = [
   { id: 'bar-ladies', name: 'Bar Lady', slug: 'bar-ladies', description: 'Bartending, mixology & event service', icon: 'Wine', sortOrder: 8 },
 ]
 
+export const PLATFORM_CONFIG = {
+  radbitStudioFeePercent: 0.15,
+  traamandRevenuePercent: 0.85,
+  payoutFeePercent: 0.02,
+  paynowPayoutMethod: 'ecocash',
+} as const
+
 export const WHATSAPP_NUMBERS = [
   { number: "+263 715 325 922", badge: "Client Bookings Support" },
   { number: "+263 782 329 308", badge: "Job Applications Support" },

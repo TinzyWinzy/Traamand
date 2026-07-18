@@ -118,6 +118,9 @@ export async function createBooking(
 ): Promise<string> {
   const docRef = await addDoc(bookingsCol(), {
     ...data,
+    platformFeePercent: data.platformFeePercent ?? 0,
+    platformCutAmount: data.platformCutAmount ?? 0,
+    traamandNetRevenue: data.traamandNetRevenue ?? 0,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   })
@@ -224,6 +227,18 @@ export async function getTransactions(userId: string): Promise<Transaction[]> {
   const q = query(transactionsCol(), where('userId', '==', userId), orderBy('createdAt', 'desc'), limit(100))
   const snap = await getDocs(q)
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Transaction)
+}
+
+export async function getAllTransactions(): Promise<Transaction[]> {
+  const q = query(transactionsCol(), orderBy('createdAt', 'desc'), limit(200))
+  const snap = await getDocs(q)
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Transaction)
+}
+
+export async function getAllBookings(): Promise<Booking[]> {
+  const q = query(bookingsCol(), orderBy('createdAt', 'desc'), limit(200))
+  const snap = await getDocs(q)
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Booking)
 }
 
 // ── Payouts ──

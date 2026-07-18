@@ -38,6 +38,7 @@ const NAV_SECTIONS: { label: string; items: { label: string; to: string; icon: a
     items: [
       { label: 'Payments', to: '/admin/payments', icon: DollarSign },
       { label: 'Payouts', to: '/admin/payouts', icon: Smartphone },
+      { label: 'Reconciliation', to: '/admin/reconciliation', icon: DollarSign },
     ],
   },
   {

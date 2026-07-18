@@ -133,6 +133,9 @@ export interface Booking {
   clientAddress: ClientAddress
   requirements: BookingRequirements
   placementFee: number
+  platformFeePercent: number
+  platformCutAmount: number
+  traamandNetRevenue: number
   placementFeePaid: boolean
   paynowPollUrl: string
   paynowReference: string
@@ -182,6 +185,8 @@ export type TransactionType =
   | 'withdrawal'
   | 'placement_fee'
   | 'cashback'
+  | 'platform_fee'
+  | 'traamand_revenue'
 
 export interface Transaction {
   id: string
