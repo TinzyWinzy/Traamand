@@ -44,9 +44,10 @@ export async function getWorkers(constraints: QueryConstraint[] = []): Promise<W
 
 export async function getAvailableWorkers(): Promise<Worker[]> {
   try {
-    const snap = await getDocs(workersCol())
+    const q = query(workersCol(), where('isActive', '==', true))
+    const snap = await getDocs(q)
     const all = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Worker)
-    const available = all.filter((w) => w.isActive && w.availability?.status === 'available')
+    const available = all.filter((w) => w.availability?.status === 'available')
     return available
   } catch (err) {
     console.error('[getAvailableWorkers] Firestore error:', err)
