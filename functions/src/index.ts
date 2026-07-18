@@ -28,6 +28,46 @@ const PLATFORM_FEE_PERCENT = 0.15
 const TRAAMAND_REVENUE_PERCENT = 0.85
 const PAYOUT_FEE_PERCENT = 0.02
 
+function urlEncode(str: string): string {
+  return encodeURI(str)
+}
+
+function createPaynowHash(values: Record<string, string>, integrationKey: string): string {
+  let raw = ''
+  for (const key of Object.keys(values)) {
+    if (key !== 'hash') {
+      raw += values[key]
+    }
+  }
+  raw += integrationKey.toLowerCase()
+  return crypto.createHash('sha512').update(raw).digest('hex').toUpperCase()
+}
+
+function buildPaynowData(params: Record<string, string>, extraOrder: string[] = []): Record<string, string> {
+  const data: Record<string, string> = {}
+  const order = ['resulturl', 'returnurl', 'reference', 'amount', 'id', 'additionalinfo', 'authemail', ...extraOrder, 'status']
+  for (const key of order) {
+    if (key in params) {
+      data[key] = urlEncode(params[key])
+    }
+  }
+  data.hash = createPaynowHash(data, params.integrationKey)
+  return data
+}
+
+function verifyPaynowHash(params: URLSearchParams, integrationKey: string): boolean {
+  const entries: [string, string][] = []
+  for (const [key, value] of params.entries()) {
+    if (key.toLowerCase() !== 'hash') {
+      entries.push([key, value])
+    }
+  }
+  const raw = entries.map(([, v]) => v).join('') + integrationKey.toLowerCase()
+  const expected = crypto.createHash('sha512').update(raw).digest('hex').toUpperCase()
+  const received = (params.get('hash') || '').toUpperCase()
+  return expected === received
+}
+
 function getFunctionBaseUrl() {
   return (
     process.env.FUNCTIONS_URL ||
@@ -414,8 +454,8 @@ export const processPaynowPayment = onCall({ secrets: [paynowId, paynowKey] }, a
   }
 
   const paynowConfig = {
-    integrationId: paynowId.value(),
-    integrationKey: paynowKey.value(),
+    integrationId: paynowId.value().trim(),
+    integrationKey: paynowKey.value().trim(),
     resultUrl: `${getFunctionBaseUrl()}/paynowCallback`,
     returnUrl: `${getSiteUrl()}/book/${booking.workerSlug || booking.workerId}/confirmation?bookingId=${bookingId}`,
   }
@@ -435,24 +475,52 @@ export const processPaynowPayment = onCall({ secrets: [paynowId, paynowKey] }, a
     throw new HttpsError('failed-precondition', 'This booking has no placement fee to pay.')
   }
 
+  const authemail = email || booking.clientEmail || 'client@traamand.co.zw'
+  const paynowData = buildPaynowData({
+    resulturl: paynowConfig.resultUrl,
+    returnurl: paynowConfig.returnUrl,
+    reference,
+    amount: amount.toFixed(2),
+    id: paynowConfig.integrationId,
+    additionalinfo: description,
+    authemail,
+    status: 'Message',
+    integrationKey: paynowConfig.integrationKey,
+  })
+  const hash = paynowData.hash
+  const body = new URLSearchParams({
+    resulturl: paynowData.resulturl,
+    returnurl: paynowData.returnurl,
+    reference: paynowData.reference,
+    amount: paynowData.amount,
+    id: paynowData.id,
+    additionalinfo: paynowData.additionalinfo,
+    authemail: paynowData.authemail,
+    status: paynowData.status,
+    hash,
+  })
+  console.error(`PAYNOW_DEBUG id="${paynowConfig.integrationId}" idLen=${paynowConfig.integrationId.length} key="${paynowConfig.integrationKey.slice(0,4)}..." body=${body.toString()}`)
+
   try {
     const response = await fetch('https://www.paynow.co.zw/interface/initiatetransaction', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        id: paynowConfig.integrationId,
-        reference,
-        amount: amount.toFixed(2),
-        additionalinfo: description,
-        returnurl: paynowConfig.returnUrl,
-        resulturl: paynowConfig.resultUrl,
-        authemail: email || booking.clientEmail || 'client@traamand.co.zw',
-        status: 'Message',
-      }),
+      body,
     })
 
     const text = await response.text()
     const params = new URLSearchParams(text)
+
+    const hashOk = verifyPaynowHash(params, paynowConfig.integrationKey)
+    if (!hashOk) {
+      const raw = text.slice(0, 600)
+      console.error(`Hash mismatch for inbound response. Sent hash=${hash}. Response: ${raw}`)
+      await bookingRef.update({
+        paynowStatus: 'hash_warning',
+        paynowLastError: raw,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      })
+    }
 
     const pollUrl = getPaynowParam(params, 'PollUrl')
     const browserUrl = getPaynowParam(params, 'BrowserUrl')
@@ -556,11 +624,10 @@ export const paynowCallback = onRequest({ secrets: [paynowKey] }, async (req, re
 
   const integrationKey = paynowKey.value()
   if (integrationKey && hash) {
-    const amount = getPaynowParam(params, 'amount')
-    const pollUrl = getPaynowParam(params, 'pollurl')
-    const expected = crypto.createHash('md5').update(integrationKey + reference + amount + status.toLowerCase() + pollUrl).digest('hex')
-    if (expected.toLowerCase() !== hash.toLowerCase()) {
-      console.error(`HMAC mismatch for ${reference}: expected ${expected}, got ${hash}`)
+    if (!verifyPaynowHash(params, integrationKey)) {
+      const allParams: Record<string, string> = {}
+      params.forEach((v, k) => { allParams[k] = v })
+      console.error(`Hash mismatch for ${reference}: params=${JSON.stringify(allParams)}`)
       res.status(403).send('Invalid hash')
       return
     }
@@ -828,6 +895,26 @@ export const processPayout = onCall({ secrets: [paynowId, paynowKey] }, async (r
   const reference = `PAY-${payoutId.slice(0, 8).toUpperCase()}`
   const recipientPhone = payout.recipient.replace(/[^0-9]/g, '')
 
+  const additionalInfo = `Traamand payout ${payoutId.slice(0, 8)}`
+  const returnUrl = getFunctionBaseUrl() + '/paynowCallback'
+  const resultUrl = getFunctionBaseUrl() + '/payoutCallback'
+  const payoutEmail = 'payouts@traamand.co.zw'
+
+  const paynowData = buildPaynowData({
+    resulturl: resultUrl,
+    returnurl: returnUrl,
+    reference,
+    amount: netAmount.toFixed(2),
+    id: integrationId,
+    additionalinfo: additionalInfo,
+    authemail: payoutEmail,
+    phone: recipientPhone,
+    method: 'ecocash',
+    status: 'Message',
+    integrationKey,
+  }, ['phone', 'method'])
+  const hash = paynowData.hash
+
   await payoutRef.update({
     status: 'processing',
     fee,
@@ -836,16 +923,17 @@ export const processPayout = onCall({ secrets: [paynowId, paynowKey] }, async (r
 
   try {
     const body = new URLSearchParams({
-      id: integrationId,
-      reference,
-      amount: netAmount.toFixed(2),
-      additionalinfo: `Traamand payout ${payoutId.slice(0, 8)}`,
-      returnurl: getFunctionBaseUrl() + '/paynowCallback',
-      resulturl: getFunctionBaseUrl() + '/payoutCallback',
-      authemail: 'payouts@traamand.co.zw',
-      phone: recipientPhone,
-      method: 'ecocash',
-      status: 'Message',
+      resulturl: paynowData.resulturl,
+      returnurl: paynowData.returnurl,
+      reference: paynowData.reference,
+      amount: paynowData.amount,
+      id: paynowData.id,
+      additionalinfo: paynowData.additionalinfo,
+      authemail: paynowData.authemail,
+      phone: paynowData.phone,
+      method: paynowData.method,
+      status: paynowData.status,
+      hash,
     })
 
     const response = await fetch('https://www.paynow.co.zw/interface/initiatetransaction', {

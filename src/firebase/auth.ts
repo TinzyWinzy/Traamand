@@ -1,6 +1,8 @@
 import {
   signInWithPopup,
   GoogleAuthProvider,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
   type User as FirebaseUser,
   signOut,
   onAuthStateChanged,
@@ -16,6 +18,16 @@ const googleProvider = new GoogleAuthProvider()
 
 export async function signInWithGoogle(): Promise<FirebaseUser> {
   const result = await signInWithPopup(auth, googleProvider)
+  return result.user
+}
+
+export async function signInWithEmail(email: string, password: string): Promise<FirebaseUser> {
+  const result = await signInWithEmailAndPassword(auth, email, password)
+  return result.user
+}
+
+export async function createUserWithEmail(email: string, password: string): Promise<FirebaseUser> {
+  const result = await createUserWithEmailAndPassword(auth, email, password)
   return result.user
 }
 

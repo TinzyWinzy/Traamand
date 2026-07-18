@@ -13,6 +13,8 @@ const AvailableStaff = lazyWithRetry(() => import('./pages/AvailableStaff'))
 const FindMaid = lazyWithRetry(() => import('./pages/FindMaid'))
 const JoinTeam = lazyWithRetry(() => import('./pages/JoinTeam'))
 const NotFound = lazyWithRetry(() => import('./pages/NotFound'))
+const Terms = lazyWithRetry(() => import('./pages/Terms'))
+const Privacy = lazyWithRetry(() => import('./pages/Privacy'))
 const SignIn = lazyWithRetry(() => import('./pages/SignIn'))
 const HomePage = lazyWithRetry(() => import('./pages/hire/EmergencyHire'))
 const WorkerList = lazyWithRetry(() => import('./pages/hire/WorkerList'))
@@ -241,6 +243,8 @@ export default function App() {
             <Route path="matches" element={<AdminMatches />} />
             <Route path="reconciliation" element={<AdminReconciliation />} />
           </Route>
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/privacy" element={<Privacy />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
         </Suspense>

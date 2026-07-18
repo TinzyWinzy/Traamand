@@ -14,6 +14,8 @@ export const PRIMARY_PHONE = PHONE_NUMBERS[0]
 export const EMAIL = "tmandovha@gmail.com"
 
 export const WHATSAPP_NUMBER = PHONE_NUMBERS[0]
+export const RADBIT_STUDIOS_URL = 'https://radbitstudios.co.zw'
+export const RADBIT_STUDIOS_NAME = 'Radbit Studios'
 export const WHATSAPP_MESSAGE = "Hello! I'm interested in your domestic worker placement services."
 
 export const NAV_LINKS = [
