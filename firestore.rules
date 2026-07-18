@@ -46,7 +46,20 @@ service cloud.firestore {
     match /bookings/{bookingId} {
       allow read: if request.auth != null
         && (resource.data.clientId == request.auth.uid || isAdminOrVerifier());
-      allow create: if request.auth != null;
+      allow create: if request.auth != null
+        || (request.resource.data.keys().hasOnly([
+          'clientId', 'clientName', 'clientPhone', 'clientWhatsapp', 'clientEmail',
+          'serviceType', 'workType', 'workerId',
+          'duration', 'startDate',
+          'clientAddress',
+          'requirements',
+          'placementFee', 'placementFeePaid',
+          'paynowPollUrl', 'paynowReference', 'paynowStatus', 'paynowPaidAt',
+          'status', 'workerArrivedAt',
+          'checkInSchedule', 'clientCheckIn',
+          'replacementRequested', 'replacementReason',
+          'createdAt', 'updatedAt',
+        ]));
       allow update: if request.auth != null
         && (resource.data.clientId == request.auth.uid || isAdminOrVerifier());
       allow delete: if isAdmin();
