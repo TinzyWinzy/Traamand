@@ -40,6 +40,51 @@ async function setCustomClaimRole(uid: string, role: string) {
   }
 }
 
+const ADMIN_RATE_LIMIT_KEY = 'admin_signin_attempts'
+const ADMIN_RATE_LIMIT_MAX = 5
+const ADMIN_RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000 // 15 minutes
+
+export function getAdminSignInBlocked(): boolean {
+  if (typeof window === 'undefined') return false
+  try {
+    const raw = localStorage.getItem(ADMIN_RATE_LIMIT_KEY)
+    if (!raw) return false
+    const attempts = JSON.parse(raw) as { ts: number; count: number }[]
+    const now = Date.now()
+    const recent = attempts.filter((a) => now - a.ts < ADMIN_RATE_LIMIT_WINDOW_MS)
+    return recent.length >= ADMIN_RATE_LIMIT_MAX
+  } catch {
+    return false
+  }
+}
+
+export function recordAdminSignInAttempt(): void {
+  if (typeof window === 'undefined') return
+  try {
+    const raw = localStorage.getItem(ADMIN_RATE_LIMIT_KEY)
+    const attempts = raw ? JSON.parse(raw) as { ts: number; count: number }[] : []
+    attempts.push({ ts: Date.now(), count: 1 })
+    const now = Date.now()
+    const filtered = attempts.filter((a) => now - a.ts < ADMIN_RATE_LIMIT_WINDOW_MS)
+    if (filtered.length >= ADMIN_RATE_LIMIT_MAX) {
+      localStorage.setItem(ADMIN_RATE_LIMIT_KEY, JSON.stringify(filtered))
+    } else {
+      localStorage.setItem(ADMIN_RATE_LIMIT_KEY, JSON.stringify(filtered))
+    }
+  } catch {
+    // ignore storage errors
+  }
+}
+
+export function clearAdminSignInAttempts(): void {
+  if (typeof window === 'undefined') return
+  try {
+    localStorage.removeItem(ADMIN_RATE_LIMIT_KEY)
+  } catch {
+    // ignore
+  }
+}
+
 export async function createOrUpdateUser(
   firebaseUser: FirebaseUser,
   data: { name: string; phone?: string; email?: string; role?: UserRole }
@@ -60,17 +105,9 @@ export async function createOrUpdateUser(
     invite = null
   }
 
-  const SUPERADMIN_EMAIL = 'brandontinoz@gmail.com'
-  const ADMIN_EMAIL = 'tmandovha@gmail.com'
-  const userEmail = data.email || firebaseUser.email || ''
-
-  let resolvedRole = invite?.role || data.role || 'client'
-  if (userEmail === SUPERADMIN_EMAIL) {
-    resolvedRole = 'superadmin'
-  } else if (userEmail === ADMIN_EMAIL) {
-    resolvedRole = 'admin'
-  } else if (resolvedRole === 'admin' || resolvedRole === 'superadmin') {
-    resolvedRole = 'client'
+  let newUserRole = invite?.role || data.role || 'client'
+  if (newUserRole === 'admin' || newUserRole === 'superadmin') {
+    newUserRole = 'client'
   }
 
   if (userSnap.exists()) {
@@ -81,13 +118,13 @@ export async function createOrUpdateUser(
       whatsappNumber: whatsappNumber || existing.whatsappNumber || '',
       updatedAt: serverTimestamp(),
     }
-    if (resolvedRole) {
-      updates.role = resolvedRole
-    }
+    const existingRole = (existing as any).role as UserRole | undefined
+    const resolvedRole = existingRole || newUserRole
+    updates.role = resolvedRole
     await setDoc(userRef, updates, { merge: true })
     const updatedSnap = await getDoc(userRef)
     const user = { id: firebaseUser.uid, ...updatedSnap.data() } as User
-    if (resolvedRole && resolvedRole !== (existing as any).role) {
+    if (resolvedRole !== existingRole) {
       setCustomClaimRole(firebaseUser.uid, resolvedRole).catch(() => {})
       try {
         await firebaseUser.getIdToken(true)
@@ -106,7 +143,7 @@ export async function createOrUpdateUser(
     addresses: [],
     bookings: [],
     favoriteWorkers: [],
-    role: resolvedRole,
+    role: newUserRole,
     referralCode: generateReferralCode(),
     referredBy,
     earningsBalance: 0,

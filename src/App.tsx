@@ -1,4 +1,4 @@
-import { Suspense, useEffect } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import Navbar from './components/layout/Navbar'
 import Footer from './components/layout/Footer'
@@ -8,6 +8,7 @@ import ErrorBoundary from './components/ui/ErrorBoundary'
 import ToastContainer from './components/ui/Toast'
 import { AuthListener, AuthGuard } from './components/auth/AuthGuard'
 import { lazyWithRetry } from './lib/lazyWithRetry'
+import { Loader2 } from 'lucide-react'
 
 function ScrollToTop() {
   const _location = useLocation()
@@ -69,9 +70,33 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate()
   return (
     <AuthGuard requireRole="admin" navigate={navigate}>
-      {children}
+      <AdminServerCheck>{children}</AdminServerCheck>
     </AuthGuard>
   )
+}
+
+function AdminServerCheck({ children }: { children: React.ReactNode }) {
+  const { user } = useAuthStore()
+  const [authorized, setAuthorized] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    if (!user?.id) return
+    import('firebase/functions').then(({ httpsCallable }) => {
+      const { functions } = require('../../firebase/config')
+      const verify = httpsCallable(functions, 'verifyAdminAccess')
+      return verify({})
+    }).then((result) => {
+      if (!cancelled) setAuthorized((result.data as { authorized: boolean }).authorized)
+    }).catch(() => {
+      if (!cancelled) setAuthorized(false)
+    })
+    return () => { cancelled = true }
+  }, [user?.id])
+
+  if (authorized === null) return <div className="flex min-h-[60vh] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-teal-600" /></div>
+  if (!authorized) { navigate('/'); return null }
+  return <>{children}</>
 }
 
 function VerifierRoute({ children }: { children: React.ReactNode }) {

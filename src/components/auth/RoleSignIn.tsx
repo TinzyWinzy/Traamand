@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { Shield, Loader2, Mail, Lock, UserIcon } from 'lucide-react'
-import { signInWithGoogle, signInWithEmail, createUserWithEmail, createOrUpdateUser } from '../../firebase/auth'
+import { signInWithGoogle, signInWithEmail, createUserWithEmail, createOrUpdateUser, getAdminSignInBlocked, recordAdminSignInAttempt, clearAdminSignInAttempts } from '../../firebase/auth'
 import { useAuthStore } from '../../stores/authStore'
 import type { UserRole } from '../../types'
 
@@ -31,9 +31,16 @@ export default function RoleSignIn({ expectedRole, successPath, title, descripti
 
   const handleGoogle = async () => {
     setError('')
+    if (expectedRole === 'admin' && getAdminSignInBlocked()) {
+      setError('Too many failed sign-in attempts. Please try again later.')
+      return
+    }
     setLoading(true)
     try {
       const fbUser = await signInWithGoogle()
+      if (expectedRole === 'admin') {
+        recordAdminSignInAttempt()
+      }
       const user = await createOrUpdateUser(fbUser, {
         name: fbUser.displayName || 'User',
         email: fbUser.email || '',
@@ -42,14 +49,20 @@ export default function RoleSignIn({ expectedRole, successPath, title, descripti
       setUser(user)
       setFirebaseUser(fbUser)
       if (isAuthorized(user.role)) {
+        if (expectedRole === 'admin') {
+          clearAdminSignInAttempts()
+        }
         navigate(successPath)
       } else if (expectedRole === 'admin') {
-        setError('This email is not authorized for admin access.')
+        setError('This account is not authorized for staff access.')
       } else {
         navigate('/')
       }
     } catch (err: any) {
       if (err.code !== 'auth/popup-closed-by-user') {
+        if (expectedRole === 'admin') {
+          recordAdminSignInAttempt()
+        }
         setError('Sign-in failed. Please try again.')
       }
     }
@@ -60,11 +73,18 @@ export default function RoleSignIn({ expectedRole, successPath, title, descripti
     e.preventDefault()
     setError('')
     if (!email || !password || (isSignUp && !name)) return
+    if (expectedRole === 'admin' && getAdminSignInBlocked()) {
+      setError('Too many failed sign-in attempts. Please try again later.')
+      return
+    }
     setLoading(true)
     try {
       const fbUser = isSignUp
         ? await createUserWithEmail(email, password)
         : await signInWithEmail(email, password)
+      if (expectedRole === 'admin') {
+        recordAdminSignInAttempt()
+      }
       const user = await createOrUpdateUser(fbUser, {
         name: isSignUp ? name : fbUser.displayName || email.split('@')[0],
         email,
@@ -73,9 +93,12 @@ export default function RoleSignIn({ expectedRole, successPath, title, descripti
       setUser(user)
       setFirebaseUser(fbUser)
       if (isAuthorized(user.role)) {
+        if (expectedRole === 'admin') {
+          clearAdminSignInAttempts()
+        }
         navigate(successPath)
       } else if (expectedRole === 'admin') {
-        setError('This email is not authorized for admin access.')
+        setError('This account is not authorized for staff access.')
       } else {
         navigate('/')
       }
@@ -88,6 +111,9 @@ export default function RoleSignIn({ expectedRole, successPath, title, descripti
         setError('Password must be at least 6 characters.')
       } else {
         setError(err.message || 'Authentication failed. Please try again.')
+      }
+      if (expectedRole === 'admin') {
+        recordAdminSignInAttempt()
       }
     }
     setLoading(false)

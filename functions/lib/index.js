@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.processPayout = exports.payoutCallback = exports.onUserCreated = exports.onBookingCompleted = exports.onApplicantConverted = exports.sendReplacementAlert = exports.onApplicantAudit = exports.onBookingAuditAndAvailability = exports.paynowCallback = exports.pollPaynowPayment = exports.processPaynowPayment = exports.updateLocationStats = exports.generateWorkerSEO = exports.scheduleCheckIns = exports.sendBookingConfirmation = exports.matchWorkerToBooking = exports.prerender = exports.sitemap = exports.setUserRole = void 0;
+exports.processPayout = exports.payoutCallback = exports.onUserCreated = exports.onBookingCompleted = exports.onApplicantConverted = exports.sendReplacementAlert = exports.onApplicantAudit = exports.onBookingAuditAndAvailability = exports.paynowCallback = exports.pollPaynowPayment = exports.processPaynowPayment = exports.updateLocationStats = exports.generateWorkerSEO = exports.scheduleCheckIns = exports.sendBookingConfirmation = exports.matchWorkerToBooking = exports.prerender = exports.sitemap = exports.initializeAdminUsers = exports.verifyAdminAccess = exports.setUserRole = void 0;
 const admin = __importStar(require("firebase-admin"));
 const firestore_1 = require("firebase-functions/v2/firestore");
 const https_1 = require("firebase-functions/v2/https");
@@ -190,30 +190,100 @@ async function releaseWorkerIfNoActiveBookings(workerId) {
         }, { merge: true });
     }
 }
-const ADMIN_EMAILS = ['brandontinoz@gmail.com', 'tmandovha@gmail.com'];
 exports.setUserRole = (0, https_1.onCall)(async (request) => {
-    const uid = request.data.uid;
-    const role = request.data.role;
-    if (!uid || !role) {
-        throw new https_1.HttpsError('invalid-argument', 'Missing uid or role');
-    }
     if (!request.auth) {
         throw new https_1.HttpsError('unauthenticated', 'Must be signed in');
     }
-    if (request.data.uid !== request.auth.uid) {
-        throw new https_1.HttpsError('permission-denied', 'You can only set your own role');
+    const callerSnap = await db.collection('users').doc(request.auth.uid).get();
+    const callerRole = callerSnap.data()?.role;
+    if (!callerRole || !['admin', 'superadmin'].includes(callerRole)) {
+        throw new https_1.HttpsError('permission-denied', 'Only admins can set user roles');
     }
-    if (role === 'admin') {
-        const callerSnap = await db.collection('users').doc(request.auth.uid).get();
-        const callerEmail = callerSnap.data()?.email;
-        if (!callerEmail || !ADMIN_EMAILS.includes(callerEmail)) {
-            throw new https_1.HttpsError('permission-denied', 'Not authorized for admin role');
+    const targetUid = request.data.uid;
+    const role = request.data.role;
+    if (!targetUid || !role) {
+        throw new https_1.HttpsError('invalid-argument', 'Missing uid or role');
+    }
+    if (!['client', 'verifier', 'admin', 'superadmin'].includes(role)) {
+        throw new https_1.HttpsError('invalid-argument', 'Invalid role');
+    }
+    const targetSnap = await db.collection('users').doc(targetUid).get();
+    const targetRole = targetSnap.data()?.role;
+    if (targetRole === 'superadmin' && callerRole !== 'superadmin') {
+        throw new https_1.HttpsError('permission-denied', 'Only superadmin can modify superadmin roles');
+    }
+    if (role === 'superadmin' && callerRole !== 'superadmin') {
+        throw new https_1.HttpsError('permission-denied', 'Only superadmin can assign superadmin role');
+    }
+    await adminAuth.setCustomUserClaims(targetUid, { role });
+    await db.collection('users').doc(targetUid).set({ role }, { merge: true });
+    const user = await adminAuth.getUser(targetUid);
+    return { success: true, uid: targetUid, role, claims: user.customClaims };
+});
+exports.verifyAdminAccess = (0, https_1.onCall)(async (request) => {
+    if (!request.auth) {
+        throw new https_1.HttpsError('unauthenticated', 'Must be signed in');
+    }
+    const userSnap = await db.collection('users').doc(request.auth.uid).get();
+    if (!userSnap.exists) {
+        throw new https_1.HttpsError('not-found', 'User not found');
+    }
+    const userData = userSnap.data();
+    const role = userData.role;
+    if (!role || !['admin', 'superadmin'].includes(role)) {
+        throw new https_1.HttpsError('permission-denied', 'Admin access required');
+    }
+    return {
+        authorized: true,
+        uid: request.auth.uid,
+        role,
+        email: userData.email,
+        name: userData.name,
+    };
+});
+exports.initializeAdminUsers = (0, https_1.onCall)(async (request) => {
+    if (!request.auth) {
+        throw new https_1.HttpsError('unauthenticated', 'Must be signed in');
+    }
+    const callerSnap = await db.collection('users').doc(request.auth.uid).get();
+    const callerRole = callerSnap.data()?.role;
+    if (callerRole !== 'superadmin') {
+        throw new https_1.HttpsError('permission-denied', 'Only superadmin can initialize admin users');
+    }
+    const adminUsers = [
+        { email: 'brandontinoz@gmail.com', role: 'superadmin' },
+        { email: 'tmandovha@gmail.com', role: 'admin' },
+    ];
+    const results = [];
+    for (const adminUser of adminUsers) {
+        const usersSnap = await db.collection('users').where('email', '==', adminUser.email).limit(1).get();
+        if (!usersSnap.empty) {
+            const userDoc = usersSnap.docs[0];
+            await userDoc.ref.set({ role: adminUser.role }, { merge: true });
+            await adminAuth.setCustomUserClaims(userDoc.id, { role: adminUser.role });
+            results.push({ email: adminUser.email, role: adminUser.role, status: 'updated' });
+        }
+        else {
+            const fbUser = await adminAuth.getUserByEmail(adminUser.email).catch(() => null);
+            if (fbUser) {
+                const ts = admin.firestore.FieldValue.serverTimestamp();
+                await db.collection('users').doc(fbUser.uid).set({
+                    uid: fbUser.uid,
+                    name: fbUser.displayName || adminUser.email.split('@')[0],
+                    email: adminUser.email,
+                    role: adminUser.role,
+                    createdAt: ts,
+                    updatedAt: ts,
+                });
+                await adminAuth.setCustomUserClaims(fbUser.uid, { role: adminUser.role });
+                results.push({ email: adminUser.email, role: adminUser.role, status: 'created' });
+            }
+            else {
+                results.push({ email: adminUser.email, role: adminUser.role, status: 'not_found' });
+            }
         }
     }
-    await adminAuth.setCustomUserClaims(uid, { role });
-    await db.collection('users').doc(uid).set({ role }, { merge: true });
-    const user = await adminAuth.getUser(uid);
-    return { success: true, uid, role, claims: user.customClaims };
+    return { success: true, results };
 });
 var sitemap_1 = require("./sitemap");
 Object.defineProperty(exports, "sitemap", { enumerable: true, get: function () { return sitemap_1.sitemap; } });

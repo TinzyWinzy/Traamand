@@ -41,18 +41,12 @@ const BASE_URL = 'https://traamand.co.zw';
 const STATIC_SEO_PAGES = [
     { path: '/maids-in-harare', priority: '0.95', changefreq: 'weekly' },
     { path: '/house-cleaning-harare', priority: '0.95', changefreq: 'weekly' },
-    { path: '/home-cleaning-services-harare', priority: '0.9', changefreq: 'weekly' },
-    { path: '/deep-cleaning-services-harare', priority: '0.9', changefreq: 'weekly' },
     { path: '/domestic-workers-harare', priority: '0.95', changefreq: 'weekly' },
     { path: '/gardeners-in-harare', priority: '0.85', changefreq: 'weekly' },
     { path: '/nurse-aides-harare', priority: '0.85', changefreq: 'weekly' },
     { path: '/drivers-in-harare', priority: '0.85', changefreq: 'weekly' },
-    { path: '/maid-jobs-harare', priority: '0.9', changefreq: 'weekly' },
     { path: '/domestic-worker-jobs-harare', priority: '0.9', changefreq: 'weekly' },
     { path: '/domestic-worker-jobs-zimbabwe', priority: '0.85', changefreq: 'weekly' },
-    { path: '/nanny-jobs-harare', priority: '0.8', changefreq: 'weekly' },
-    { path: '/chef-jobs-harare', priority: '0.75', changefreq: 'weekly' },
-    { path: '/gardener-jobs-harare', priority: '0.75', changefreq: 'weekly' },
 ];
 async function generateSitemap() {
     const urls = [];
@@ -75,7 +69,13 @@ async function generateSitemap() {
     });
     const locationPagesSnap = await firestore().collection('locationPages').get();
     locationPagesSnap.docs.forEach((doc) => {
-        urls.push(`  <url><loc>${BASE_URL}/hire/${doc.data().serviceType?.toLowerCase()}/${doc.data().city?.toLowerCase()}/${doc.data().suburb?.toLowerCase()}</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>`);
+        const data = doc.data();
+        const serviceType = data.serviceType?.toLowerCase();
+        const city = data.city?.toLowerCase();
+        const suburb = data.suburb?.toLowerCase();
+        if (serviceType && city && suburb && serviceType !== 'undefined' && city !== 'undefined' && suburb !== 'undefined') {
+            urls.push(`  <url><loc>${BASE_URL}/hire/${serviceType}/${city}/${suburb}</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>`);
+        }
     });
     urls.push(`  <url><loc>${BASE_URL}/available-staff</loc><changefreq>daily</changefreq><priority>0.6</priority></url>`);
     urls.push(`  <url><loc>${BASE_URL}/find-a-maid</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>`);

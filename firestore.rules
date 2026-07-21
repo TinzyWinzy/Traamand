@@ -30,11 +30,7 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow read: if request.auth != null;
-      allow create: if isOwner(userId) && (
-        request.resource.data.role == 'client' ||
-        (request.resource.data.role == 'admin' && request.auth.token.email in ['brandontinoz@gmail.com', 'tmandovha@gmail.com']) ||
-        (request.resource.data.role == 'superadmin' && request.auth.token.email == 'brandontinoz@gmail.com')
-      );
+      allow create: if isOwner(userId) && request.resource.data.role == 'client';
       allow update: if isAdmin() || (isOwner(userId) && request.resource.data.role == resource.data.role);
       allow delete: if isAdmin();
     }

@@ -5,6 +5,8 @@ import { setGlobalOptions } from 'firebase-functions/v2'
 import { defineSecret } from 'firebase-functions/params'
 import * as crypto from 'crypto'
 
+type UserRole = 'client' | 'admin' | 'superadmin' | 'verifier' | 'creator' | 'sponsor' | 'advertise' | 'applicant'
+
 const paynowId = defineSecret('PAYNOW_INTEGRATION_ID')
 const paynowKey = defineSecret('PAYNOW_INTEGRATION_KEY')
 import {
@@ -195,36 +197,115 @@ async function releaseWorkerIfNoActiveBookings(workerId: string) {
   }
 }
 
-const ADMIN_EMAILS = ['brandontinoz@gmail.com', 'tmandovha@gmail.com']
-
 export const setUserRole = onCall(async (request) => {
-  const uid = request.data.uid as string
-  const role = request.data.role as string
-  if (!uid || !role) {
-    throw new HttpsError('invalid-argument', 'Missing uid or role')
-  }
-
   if (!request.auth) {
     throw new HttpsError('unauthenticated', 'Must be signed in')
   }
 
-  if (request.data.uid !== request.auth.uid) {
-    throw new HttpsError('permission-denied', 'You can only set your own role')
+  const callerSnap = await db.collection('users').doc(request.auth.uid).get()
+  const callerRole = callerSnap.data()?.role as string | undefined
+
+  if (!callerRole || !['admin', 'superadmin'].includes(callerRole)) {
+    throw new HttpsError('permission-denied', 'Only admins can set user roles')
   }
 
-  if (role === 'admin') {
-    const callerSnap = await db.collection('users').doc(request.auth.uid).get()
-    const callerEmail = callerSnap.data()?.email as string | undefined
-    if (!callerEmail || !ADMIN_EMAILS.includes(callerEmail)) {
-      throw new HttpsError('permission-denied', 'Not authorized for admin role')
+  const targetUid = request.data.uid as string
+  const role = request.data.role as string
+  if (!targetUid || !role) {
+    throw new HttpsError('invalid-argument', 'Missing uid or role')
+  }
+
+  if (!['client', 'verifier', 'admin', 'superadmin'].includes(role)) {
+    throw new HttpsError('invalid-argument', 'Invalid role')
+  }
+
+  const targetSnap = await db.collection('users').doc(targetUid).get()
+  const targetRole = targetSnap.data()?.role as string | undefined
+  if (targetRole === 'superadmin' && callerRole !== 'superadmin') {
+    throw new HttpsError('permission-denied', 'Only superadmin can modify superadmin roles')
+  }
+  if (role === 'superadmin' && callerRole !== 'superadmin') {
+    throw new HttpsError('permission-denied', 'Only superadmin can assign superadmin role')
+  }
+
+  await adminAuth.setCustomUserClaims(targetUid, { role })
+  await db.collection('users').doc(targetUid).set({ role }, { merge: true })
+
+  const user = await adminAuth.getUser(targetUid)
+  return { success: true, uid: targetUid, role, claims: user.customClaims }
+})
+
+export const verifyAdminAccess = onCall(async (request) => {
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'Must be signed in')
+  }
+
+  const userSnap = await db.collection('users').doc(request.auth.uid).get()
+  if (!userSnap.exists) {
+    throw new HttpsError('not-found', 'User not found')
+  }
+
+  const userData = userSnap.data()!
+  const role = userData.role as string | undefined
+
+  if (!role || !['admin', 'superadmin'].includes(role)) {
+    throw new HttpsError('permission-denied', 'Admin access required')
+  }
+
+  return {
+    authorized: true,
+    uid: request.auth.uid,
+    role,
+    email: userData.email,
+    name: userData.name,
+  }
+})
+
+export const initializeAdminUsers = onCall(async (request) => {
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'Must be signed in')
+  }
+
+  const callerSnap = await db.collection('users').doc(request.auth.uid).get()
+  const callerRole = callerSnap.data()?.role as string | undefined
+  if (callerRole !== 'superadmin') {
+    throw new HttpsError('permission-denied', 'Only superadmin can initialize admin users')
+  }
+
+  const adminUsers = [
+    { email: 'brandontinoz@gmail.com', role: 'superadmin' as UserRole },
+    { email: 'tmandovha@gmail.com', role: 'admin' as UserRole },
+  ]
+
+  const results = []
+  for (const adminUser of adminUsers) {
+    const usersSnap = await db.collection('users').where('email', '==', adminUser.email).limit(1).get()
+    if (!usersSnap.empty) {
+      const userDoc = usersSnap.docs[0]
+      await userDoc.ref.set({ role: adminUser.role }, { merge: true })
+      await adminAuth.setCustomUserClaims(userDoc.id, { role: adminUser.role })
+      results.push({ email: adminUser.email, role: adminUser.role, status: 'updated' })
+    } else {
+      const fbUser = await adminAuth.getUserByEmail(adminUser.email).catch(() => null)
+      if (fbUser) {
+        const ts = admin.firestore.FieldValue.serverTimestamp()
+        await db.collection('users').doc(fbUser.uid).set({
+          uid: fbUser.uid,
+          name: fbUser.displayName || adminUser.email.split('@')[0],
+          email: adminUser.email,
+          role: adminUser.role,
+          createdAt: ts,
+          updatedAt: ts,
+        })
+        await adminAuth.setCustomUserClaims(fbUser.uid, { role: adminUser.role })
+        results.push({ email: adminUser.email, role: adminUser.role, status: 'created' })
+      } else {
+        results.push({ email: adminUser.email, role: adminUser.role, status: 'not_found' })
+      }
     }
   }
 
-  await adminAuth.setCustomUserClaims(uid, { role })
-  await db.collection('users').doc(uid).set({ role }, { merge: true })
-
-  const user = await adminAuth.getUser(uid)
-  return { success: true, uid, role, claims: user.customClaims }
+  return { success: true, results }
 })
 
 export { sitemap } from './sitemap'
