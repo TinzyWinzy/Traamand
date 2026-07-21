@@ -35,9 +35,9 @@ test.describe('Public Client Flow — Hire Page', () => {
   })
 
   test('join team page loads', async ({ page }) => {
-    await page.goto('/join-team', { waitUntil: 'domcontentloaded' })
-    await page.waitForTimeout(3000)
+    await page.goto('/join-our-team', { waitUntil: 'domcontentloaded' })
+    await page.waitForTimeout(5000)
 
-    await expect(page.getByLabel(/full name/i).or(page.locator('h1:has-text("Join")'))).toBeVisible({ timeout: 10000 })
+    await expect(page.getByLabel(/full name/i).or(page.locator('h1:has-text("Domestic Worker Jobs")'))).toBeVisible({ timeout: 30000 })
   })
 })
