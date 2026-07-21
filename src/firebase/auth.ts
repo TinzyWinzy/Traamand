@@ -163,7 +163,7 @@ export async function createOrUpdateUser(
   }
 
   const user = { id: firebaseUser.uid, ...newUser } as unknown as User
-  setCustomClaimRole(firebaseUser.uid, resolvedRole).catch(() => {})
+  setCustomClaimRole(firebaseUser.uid, newUserRole).catch(() => {})
   try {
     await firebaseUser.getIdToken(true)
   } catch {
