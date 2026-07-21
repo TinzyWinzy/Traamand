@@ -50,7 +50,7 @@ export default function SignIn() {
       const redirect = searchParams.get('redirect')
       if (redirect?.startsWith('/') && !redirect.startsWith('//')) {
         navigate(redirect)
-      } else if (user.role === 'admin') navigate('/admin')
+      } else if (['admin', 'superadmin'].includes(user.role)) navigate('/admin')
       else if (user.role === 'verifier') navigate('/verifier')
       else if (user.role === 'creator') navigate('/creator')
       else if (user.role === 'sponsor') navigate('/sponsor')
@@ -85,7 +85,7 @@ export default function SignIn() {
       const redirect = searchParams.get('redirect')
       if (redirect?.startsWith('/') && !redirect.startsWith('//')) {
         navigate(redirect)
-      } else if (user.role === 'admin') navigate('/admin')
+      } else if (['admin', 'superadmin'].includes(user.role)) navigate('/admin')
       else if (user.role === 'verifier') navigate('/verifier')
       else if (user.role === 'creator') navigate('/creator')
       else if (user.role === 'sponsor') navigate('/sponsor')

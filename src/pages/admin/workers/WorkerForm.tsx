@@ -126,8 +126,8 @@ export default function WorkerForm() {
   }, [id])
 
   useEffect(() => {
-    if (!authLoading && (!isAuthenticated || user?.role !== 'admin')) {
-      navigate('/sign-in')
+    if (!authLoading && (!isAuthenticated || !['admin', 'superadmin'].includes(user?.role || ''))) {
+      navigate('/admin/sign-in')
       return
     }
     if (isEdit) {

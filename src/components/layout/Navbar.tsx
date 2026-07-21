@@ -175,7 +175,7 @@ export default function Navbar() {
                         )}
 
                         {/* Admin Dashboard */}
-                        {user.role === 'admin' && (
+                        {['admin', 'superadmin'].includes(user.role) && (
                           <Link
                             to="/admin"
                             onClick={() => setDropdownOpen(false)}
@@ -313,7 +313,7 @@ export default function Navbar() {
 
               {!isLoading && isAuthenticated && user ? (
                 <>
-                  {user.role === 'admin' && (
+                  {['admin', 'superadmin'].includes(user.role) && (
                     <Link
                       to="/admin"
                       onClick={closeDrawer}

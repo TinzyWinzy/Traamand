@@ -47,11 +47,24 @@ export default function AdminUsers() {
   }, [addToast])
 
   useEffect(() => {
-    if (!authLoading && (!isAuthenticated || currentUser?.role !== 'admin')) return
+    if (!authLoading && (!isAuthenticated || !['admin', 'superadmin'].includes(currentUser?.role || ''))) return
     if (!authLoading && isAuthenticated) fetchData()
   }, [authLoading, currentUser?.role, fetchData, isAuthenticated])
 
   const updateRole = async (userId: string, role: UserRole) => {
+    const target = users.find((u) => u.id === userId)
+    if (!target) return
+    if (target.role === 'superadmin' && currentUser?.role !== 'superadmin') {
+      addToast('Only a superadmin can change a superadmin role', 'error')
+      return
+    }
+    if (role === 'superadmin' && currentUser?.role !== 'superadmin') {
+      addToast('Only a superadmin can assign superadmin role', 'error')
+      return
+    }
+    if (userId === currentUser?.id && role !== 'superadmin') {
+      if (!confirm(`Change your own role to "${role}"? This could lock you out.`)) return
+    }
     try {
       await updateDoc(doc(db, 'users', userId), { role })
       setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role } : u)))
@@ -139,6 +152,8 @@ export default function AdminUsers() {
               >
                 <option value="client">Client</option>
                 <option value="verifier">Verifier</option>
+                <option value="admin">Admin</option>
+                {currentUser?.role === 'superadmin' && <option value="superadmin">Superadmin</option>}
               </select>
             </div>
             <button
@@ -165,11 +180,12 @@ export default function AdminUsers() {
                   <div className="flex items-center gap-3">
                     <Mail className="h-4 w-4 text-slate-400" />
                     <span className="text-sm font-medium text-slate-700">{inv.email}</span>
-                    <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                      inv.role === 'admin' ? 'bg-purple-100 text-purple-700'
-                      : inv.role === 'verifier' ? 'bg-amber-100 text-amber-700'
-                      : 'bg-slate-100 text-slate-600'
-                    }`}>
+                     <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                       inv.role === 'superadmin' ? 'bg-amber-100 text-amber-700 ring-2 ring-amber-300'
+                       : inv.role === 'admin' ? 'bg-purple-100 text-purple-700'
+                       : inv.role === 'verifier' ? 'bg-amber-100 text-amber-700'
+                       : 'bg-slate-100 text-slate-600'
+                     }`}>
                       {inv.role}
                     </span>
                     {inv.accepted && (
@@ -237,44 +253,51 @@ export default function AdminUsers() {
                         {u.email || '—'}
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${
-                          u.role === 'admin'
-                            ? 'bg-purple-100 text-purple-700'
-                            : u.role === 'verifier'
-                              ? 'bg-amber-100 text-amber-700'
-                              : 'bg-slate-100 text-slate-600'
-                        }`}
-                      >
-                        <Shield className="h-3 w-3" />
-                        {u.role || 'client'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-1.5">
-                        {(['client', 'verifier'] as UserRole[]).map((r) => (
-                          <button
-                            key={r}
-                            onClick={() => {
-                              if (u.id === currentUser?.id) {
-                                if (!confirm(`Change your own role to "${r}"? This could lock you out.`)) return
-                              }
-                              updateRole(u.id, r)
-                            }}
-                            disabled={u.role === r}
-                            className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
-                              u.role === r
-                                ? 'bg-teal-600 text-white cursor-default'
-                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                            }`}
-                          >
-                            {r === 'client' ? <XCircle className="inline h-3 w-3 mr-0.5" /> : <CheckCircle className="inline h-3 w-3 mr-0.5" />}
-                            {r}
-                          </button>
-                        ))}
-                      </div>
-                    </td>
+                     <td className="px-6 py-4">
+                       <span
+                         className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${
+                           u.role === 'superadmin'
+                             ? 'bg-amber-100 text-amber-700 ring-2 ring-amber-300'
+                             : u.role === 'admin'
+                               ? 'bg-purple-100 text-purple-700'
+                               : u.role === 'verifier'
+                                 ? 'bg-amber-100 text-amber-700'
+                                 : 'bg-slate-100 text-slate-600'
+                         }`}
+                       >
+                         <Shield className="h-3 w-3" />
+                         {u.role || 'client'}
+                       </span>
+                     </td>
+                     <td className="px-6 py-4">
+                       <div className="flex items-center gap-1.5">
+                         {(['client', 'verifier', 'admin'] as UserRole[]).map((r) => {
+                           const canChange = currentUser?.role === 'superadmin' || u.role !== 'superadmin'
+                           return (
+                             <button
+                               key={r}
+                               onClick={() => {
+                                 if (u.id === currentUser?.id) {
+                                   if (!confirm(`Change your own role to "${r}"? This could lock you out.`)) return
+                                 }
+                                 updateRole(u.id, r)
+                               }}
+                               disabled={u.role === r || !canChange}
+                               className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
+                                 u.role === r
+                                   ? 'bg-teal-600 text-white cursor-default'
+                                   : canChange
+                                     ? 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                     : 'bg-slate-50 text-slate-400 cursor-not-allowed'
+                               }`}
+                             >
+                               {r === 'client' ? <XCircle className="inline h-3 w-3 mr-0.5" /> : <CheckCircle className="inline h-3 w-3 mr-0.5" />}
+                               {r}
+                             </button>
+                           )
+                         })}
+                       </div>
+                     </td>
                   </tr>
                 ))}
               </tbody>

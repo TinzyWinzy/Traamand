@@ -60,13 +60,16 @@ export async function createOrUpdateUser(
     invite = null
   }
 
-  const ADMIN_EMAILS = ['brandontinoz@gmail.com', 'tmandovha@gmail.com']
+  const SUPERADMIN_EMAIL = 'brandontinoz@gmail.com'
+  const ADMIN_EMAIL = 'tmandovha@gmail.com'
   const userEmail = data.email || firebaseUser.email || ''
 
   let resolvedRole = invite?.role || data.role || 'client'
-  if (ADMIN_EMAILS.includes(userEmail)) {
+  if (userEmail === SUPERADMIN_EMAIL) {
+    resolvedRole = 'superadmin'
+  } else if (userEmail === ADMIN_EMAIL) {
     resolvedRole = 'admin'
-  } else if (resolvedRole === 'admin') {
+  } else if (resolvedRole === 'admin' || resolvedRole === 'superadmin') {
     resolvedRole = 'client'
   }
 

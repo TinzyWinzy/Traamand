@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useCallback } from 'react'
 import { useAuthStore } from '../../stores/authStore'
 import { onAuthChange, getUserData } from '../../firebase/auth'
 import type { NavigateFunction } from 'react-router-dom'
@@ -13,6 +13,13 @@ interface AuthGuardProps {
 export function AuthGuard({ children, requireRole, navigate }: AuthGuardProps) {
   const { isAuthenticated, isLoading, user } = useAuthStore()
 
+  const hasRole = useCallback((required: string | undefined) => {
+    if (!required) return true
+    if (user?.role === required) return true
+    if (required === 'admin' && user?.role === 'superadmin') return true
+    return false
+  }, [user?.role])
+
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       const roleSignInMap: Record<string, string> = {
@@ -25,16 +32,16 @@ export function AuthGuard({ children, requireRole, navigate }: AuthGuardProps) {
       }
       const target = requireRole && roleSignInMap[requireRole] ? roleSignInMap[requireRole] : '/sign-in'
       navigate(target)
-    } else if (!isLoading && isAuthenticated && requireRole && user?.role !== requireRole) {
+    } else if (!isLoading && isAuthenticated && requireRole && !hasRole(requireRole)) {
       navigate('/')
     }
-  }, [isLoading, isAuthenticated, requireRole, user?.role, navigate])
+  }, [isLoading, isAuthenticated, requireRole, user?.role, navigate, hasRole])
 
   if (isLoading) return null
 
   if (!isAuthenticated) return null
 
-  if (requireRole && user?.role !== requireRole) return null
+  if (requireRole && !hasRole(requireRole)) return null
 
   return <>{children}</>
 }

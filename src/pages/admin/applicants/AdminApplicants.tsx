@@ -77,7 +77,7 @@ export default function AdminApplicants() {
   }, [addToast])
 
   useEffect(() => {
-    if (user?.role !== 'admin') {
+    if (!['admin', 'superadmin'].includes(user?.role || '')) {
       navigate('/admin/sign-in')
       return
     }

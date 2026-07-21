@@ -172,7 +172,7 @@ export interface UserAddress {
   lng: number
 }
 
-export type UserRole = 'client' | 'admin' | 'verifier' | 'creator' | 'sponsor' | 'advertise' | 'applicant'
+export type UserRole = 'client' | 'admin' | 'superadmin' | 'verifier' | 'creator' | 'sponsor' | 'advertise' | 'applicant'
 
 export type TransactionType =
   | 'referral_bonus'

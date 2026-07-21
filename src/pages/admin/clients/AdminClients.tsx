@@ -44,7 +44,7 @@ export default function AdminClients() {
   }, [addToast])
 
   useEffect(() => {
-    if (!authLoading && (!isAuthenticated || user?.role !== 'admin')) {
+    if (!authLoading && (!isAuthenticated || !['admin', 'superadmin'].includes(user?.role || ''))) {
       navigate('/sign-in')
       return
     }
