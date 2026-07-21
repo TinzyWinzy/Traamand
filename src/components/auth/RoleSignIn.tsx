@@ -54,7 +54,7 @@ export default function RoleSignIn({ expectedRole, successPath, title, descripti
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
-    if (!email || !password || (!isSignUp && !name)) return
+    if (!email || !password || (isSignUp && !name)) return
     setLoading(true)
     try {
       const fbUser = isSignUp

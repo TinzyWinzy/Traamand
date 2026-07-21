@@ -21,6 +21,17 @@ const BOOKING_STATUSES = [
   'worker_assigned', 'started', 'completed', 'cancelled',
 ] as const
 
+const VALID_TRANSITIONS: Record<string, string[]> = {
+  inquiry: ['matched', 'cancelled'],
+  matched: ['booked', 'cancelled'],
+  booked: ['placement_fee_paid', 'cancelled'],
+  placement_fee_paid: ['worker_assigned', 'cancelled'],
+  worker_assigned: ['started', 'cancelled'],
+  started: ['completed', 'cancelled'],
+  completed: [],
+  cancelled: [],
+}
+
 const STATUS_COLORS: Record<string, string> = {
   inquiry: 'bg-slate-100 text-slate-600',
   matched: 'bg-blue-100 text-blue-700',
@@ -66,16 +77,21 @@ export default function AdminBookings() {
     fetchData()
   }, [fetchData])
 
-  const updateStatus = async (bookingId: string, status: string) => {
+  const updateStatus = async (bookingId: string, currentStatus: string, newStatus: string) => {
+    const allowed = VALID_TRANSITIONS[currentStatus] || []
+    if (!allowed.includes(newStatus)) {
+      addToast(`Cannot move from ${currentStatus} to ${newStatus}`, 'error')
+      return
+    }
     try {
       await updateDoc(doc(db, 'bookings', bookingId), {
-        status,
+        status: newStatus,
         updatedBy: user?.id || 'admin',
         updatedByName: user?.name || 'Admin',
         updatedAt: serverTimestamp(),
       })
       setBookings((prev) =>
-        prev.map((b) => (b.id === bookingId ? { ...b, status: status as Booking['status'] } : b))
+        prev.map((b) => (b.id === bookingId ? { ...b, status: newStatus as Booking['status'] } : b))
       )
     } catch {
       addToast('Failed to update booking status', 'error')
@@ -316,7 +332,7 @@ export default function AdminBookings() {
                       {BOOKING_STATUSES.map((status) => (
                         <button
                           key={status}
-                          onClick={() => updateStatus(booking.id, status)}
+                          onClick={() => updateStatus(booking.id, booking.status, status)}
                           disabled={booking.status === status}
                           className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed ${
                             booking.status === status

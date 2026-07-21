@@ -78,7 +78,7 @@ export default function AdminApplicants() {
 
   useEffect(() => {
     if (user?.role !== 'admin') {
-      navigate('/sign-in')
+      navigate('/admin/sign-in')
       return
     }
     fetchApplicants()

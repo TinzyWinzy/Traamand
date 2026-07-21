@@ -61,6 +61,11 @@ export default function AdminPayments() {
 
   const markPaymentPaid = async (booking: Booking) => {
     setBusyBookingId(booking.id)
+    if (booking.placementFeePaid) {
+      addToast('Payment is already marked as paid', 'error')
+      setBusyBookingId('')
+      return
+    }
     try {
       await updateDoc(doc(db, 'bookings', booking.id), {
         placementFeePaid: true,

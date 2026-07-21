@@ -125,7 +125,7 @@ describe('AdminApplicants', () => {
     )
     const { default: AdminApplicants } = await import('../pages/admin/applicants/AdminApplicants')
     render(<MemoryRouter><AdminApplicants /></MemoryRouter>)
-    expect(mockNavigate).toHaveBeenCalledWith('/sign-in')
+    expect(mockNavigate).toHaveBeenCalledWith('/admin/sign-in')
   })
 
   it('shows empty state when no applicants exist', async () => {
