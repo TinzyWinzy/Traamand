@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Search, Filter, Loader2, MessageCircle, ExternalLink, User, BookOpen, Check, X } from 'lucide-react'
+import { Search, Filter, Loader2, MessageCircle, User, BookOpen, Check, X } from 'lucide-react'
 import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore'
 import { db } from '../../../firebase/config'
 import type { Applicant, Booking } from '../../../types'

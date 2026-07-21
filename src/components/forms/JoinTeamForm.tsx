@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Check, Upload, Loader2, X, Video, Briefcase, Clock, Building2, TrendingUp, Home, Zap, MessageCircle, MapPin, Languages, Search } from 'lucide-react'
+import { Check, Upload, Loader2, X, Video, Briefcase, Clock, Building2, TrendingUp, Home, Zap, MessageCircle, MapPin, Search } from 'lucide-react'
 import { EDUCATION_LEVELS, LANGUAGES, SERVICE_CATEGORIES, SUBURBS_BY_REGION } from '../../lib/constants'
 import { createApplicant, updateApplicant, getApplicantsByPhone } from '../../firebase/firestore'
 import { uploadApplicantFile, uploadApplicantPhoto, uploadApplicantVideo, MAX_FILE_SIZE } from '../../lib/upload'
@@ -102,7 +102,7 @@ export default function JoinTeamForm() {
       .then(setMatches)
       .catch(() => {})
       .finally(() => setLoadingMatches(false))
-  }, [submitted])
+  }, [submitted, applicantRef, data.position, data.serviceAreas, data.workType, data.yearsOfExperience, data.availabilityTimeline])
 
   const update = (field: keyof FormData, value: string | string[]) => {
     setData((prev) => ({ ...prev, [field]: value }))

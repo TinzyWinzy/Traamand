@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
-import { COMPANY_NAME } from '../lib/constants'
 import SEOHead from '../components/seo/SEOHead'
 
 export default function Privacy() {

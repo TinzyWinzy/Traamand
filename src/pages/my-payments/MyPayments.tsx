@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react'
-import { Check, Clock, AlertCircle, Download, ExternalLink, MessageCircle, Loader2 } from 'lucide-react'
+import { Check, Clock, Download, ExternalLink, Loader2 } from 'lucide-react'
 import { getClientBookings } from '../../firebase/firestore'
 import { useAuthStore } from '../../stores/authStore'
 import type { Booking } from '../../types'
-import { generateWhatsAppUrl } from '../../lib/whatsapp'
 
 export default function MyPayments() {
   const { user } = useAuthStore()

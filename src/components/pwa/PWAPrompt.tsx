@@ -45,7 +45,7 @@ export default function PWAPrompt() {
 
   const [mode, setMode] = useState<'beforeinstallprompt' | 'ios' | 'ios-non-safari' | 'generic' | null>(null)
   const [deferredPrompt, setDeferredPrompt] = useState<unknown>(null)
-  const [dismissed, setDismissed] = useState(false)
+  const [_dismissed, setDismissed] = useState(false)
   const dismissedRef = useRef(false)
 
   useEffect(() => {
