@@ -27,7 +27,7 @@ export default function ReferralDashboard({ onWithdraw, compact }: ReferralDashb
       setStats(s)
       setTransactions(t)
       setLoading(false)
-    })
+    }).catch(() => setLoading(false))
   }, [user?.id])
 
   const initCode = useCallback(async () => {

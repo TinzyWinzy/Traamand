@@ -48,7 +48,7 @@ export default function AmbassadorDashboard() {
       setLeaderboard(lb)
       setTransactions(txns)
       setLoading(false)
-    })
+    }).catch(() => setLoading(false))
   }, [user?.id])
 
   if (loading) {

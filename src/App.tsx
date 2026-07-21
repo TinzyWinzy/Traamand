@@ -1,5 +1,5 @@
-import { Suspense } from 'react'
-import { Routes, Route, useNavigate } from 'react-router-dom'
+import { Suspense, useEffect } from 'react'
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import Navbar from './components/layout/Navbar'
 import Footer from './components/layout/Footer'
 import WhatsAppWidget from './components/whatsapp/WhatsAppWidget'
@@ -8,6 +8,14 @@ import ErrorBoundary from './components/ui/ErrorBoundary'
 import ToastContainer from './components/ui/Toast'
 import { AuthListener, AuthGuard } from './components/auth/AuthGuard'
 import { lazyWithRetry } from './lib/lazyWithRetry'
+
+function ScrollToTop() {
+  const _location = useLocation()
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [_location.pathname])
+  return null
+}
 
 const AvailableStaff = lazyWithRetry(() => import('./pages/AvailableStaff'))
 const FindMaid = lazyWithRetry(() => import('./pages/FindMaid'))
@@ -247,6 +255,7 @@ export default function App() {
           <Route path="/privacy" element={<Privacy />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
+        <ScrollToTop />
         </Suspense>
       </main>
       <Footer />
