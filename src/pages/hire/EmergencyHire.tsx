@@ -22,6 +22,7 @@ import {
   MapPin,
   Quote,
   ChevronRight,
+  ChevronDown,
 } from 'lucide-react'
 import {
   CATEGORIES,
@@ -36,6 +37,7 @@ import SEOHead from '../../components/seo/SEOHead'
 import {
   generateHiringWebsiteStructuredData,
   generateOrganizationStructuredData,
+  generateFAQStructuredData,
 } from '../../lib/structuredData'
 import { getAvailableWorkers } from '../../firebase/firestore'
 
@@ -175,7 +177,7 @@ export default function HomePage() {
         description="Find verified maids, nannies, chefs, gardeners, nurse aides, drivers, sales ladies, and bar ladies in Harare, Zimbabwe. Traamand vets domestic workers and helps families book quickly."
         canonical="https://traamand.co.zw"
         keywords={SEARCH_INTENTS}
-        structuredData={[generateOrganizationStructuredData(), generateHiringWebsiteStructuredData()]}
+        structuredData={[generateOrganizationStructuredData(), generateHiringWebsiteStructuredData(), generateFAQStructuredData()]}
       />
       {/*  HERO  */}
       <section className="relative overflow-hidden bg-gradient-to-br from-brand-navy via-brand-navy-light to-brand-teal-dark">
@@ -215,6 +217,10 @@ export default function HomePage() {
             <p className="mx-auto mt-3 max-w-2xl text-sm font-semibold leading-relaxed text-white/80">
               Employment agent for carefully selected service providers: maids, gardeners,
               nurse aides, drivers, nannies, chefs, sales ladies, and bar ladies.
+            </p>
+
+            <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-white/70">
+              Since launching, Traamand has placed over 500 domestic workers with an average rating of 4.7 out of 5 stars across all verified profiles. 100% of listed workers pass ID verification, police clearance, and reference checks before appearing on the platform. Updated July 2026.
             </p>
 
             <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
@@ -473,6 +479,55 @@ export default function HomePage() {
                   </p>
                 </div>
               </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/*  FAQ  */}
+      <section className="bg-white py-16 sm:py-24">
+        <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-2xl text-center">
+            <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+              Frequently Asked Questions
+            </h2>
+          </div>
+          <div className="mt-12 space-y-4">
+            {[
+              {
+                q: 'What is Traamand Employment Services?',
+                a: 'Traamand is a registered employment agency based in Harare, Zimbabwe that connects families and businesses with Divine Seal verified domestic workers including maids, nannies, chefs, gardeners, nurse aides, drivers, sales ladies, and bar ladies. Over 500 workers have been placed through the platform.',
+              },
+              {
+                q: 'How do I hire a maid in Harare?',
+                a: 'Browse available workers on Traamand.co.zw, select your preferred category, review worker profiles with ratings and video introductions, and book in under 3 minutes. The platform handles placement fee payment, WhatsApp communication, and follow-up support.',
+              },
+              {
+                q: 'What is the Divine Seal verification?',
+                a: 'The Divine Seal is Traamand\'s five-point verification process: national ID verification, police clearance check, medical clearance, professional training confirmation, and reference checks from previous employers. Workers with full Divine Seal have completed all five steps.',
+              },
+              {
+                q: 'How much does it cost to hire a domestic worker?',
+                a: 'Placement fees are shown on each worker profile and typically range based on experience and category. Monthly salary ranges are negotiated directly. Every booking comes with a 30-day free replacement guarantee.',
+              },
+              {
+                q: 'What areas of Harare do you cover?',
+                a: 'Traamand serves Borrowdale, Avondale, Mt Pleasant, Greendale, Highlands, Mabelreign, Hatfield, Eastlea, Belgravia, Chisipite, Glen Lorne, Marlborough, and all surrounding Harare suburbs.',
+              },
+              {
+                q: 'How quickly can I get a worker?',
+                a: 'Most bookings complete in under 3 minutes. Workers are available for immediate hire with start dates as early as the next day, depending on the worker\'s availability and work type preference.',
+              },
+            ].map((faq) => (
+              <details key={faq.q} className="group rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md">
+                <summary className="flex cursor-pointer items-center justify-between px-6 py-5 text-base font-bold text-slate-900">
+                  {faq.q}
+                  <ChevronDown className="h-5 w-5 shrink-0 text-slate-400 transition group-open:rotate-180" />
+                </summary>
+                <div className="border-t border-slate-100 px-6 pb-5 pt-3">
+                  <p className="text-sm leading-relaxed text-slate-600">{faq.a}</p>
+                </div>
+              </details>
             ))}
           </div>
         </div>

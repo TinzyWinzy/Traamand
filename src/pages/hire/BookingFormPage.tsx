@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link, useLocation } from 'react-router-dom'
 import { useForm, Controller, type FieldErrors } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import SEOHead from '../../components/seo/SEOHead'
 import {
   Calendar,
   MapPin,
@@ -249,6 +250,12 @@ export default function BookingFormPage() {
   }
 
   return (
+    <>
+      <SEOHead
+        title={worker ? `Book ${worker.displayName} | Traamand` : 'Book a Worker | Traamand'}
+        description={worker ? `Book Divine Seal verified ${worker.displayName} for domestic work in Harare. Complete your booking in 3 steps.` : 'Complete your booking for a verified domestic worker in Harare.'}
+        noIndex
+      />
     <section className="min-h-screen bg-zinc-50 py-8 sm:py-12">
       <div className="mx-auto max-w-lg px-4 sm:px-6">
         <Link to={`/worker/${slug}`} className="mb-4 inline-flex items-center gap-1 text-sm font-medium text-teal-600 transition hover:text-teal-700">
@@ -594,5 +601,6 @@ export default function BookingFormPage() {
         </form>
       </div>
     </section>
+    </>
   )
 }

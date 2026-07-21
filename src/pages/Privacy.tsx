@@ -1,9 +1,16 @@
 import { Link } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { COMPANY_NAME } from '../lib/constants'
+import SEOHead from '../components/seo/SEOHead'
 
 export default function Privacy() {
   return (
+    <>
+      <SEOHead
+        title="Privacy Policy | Traamand Employment Services"
+        description="Traamand's privacy policy explains how we collect, use, and protect your personal information when using our domestic worker platform."
+        canonical="https://traamand.co.zw/privacy"
+      />
     <section className="bg-zinc-50 py-12 sm:py-20">
       <div className="mx-auto max-w-3xl px-4 sm:px-6">
         <Link to="/" className="mb-6 inline-flex items-center gap-1 text-sm text-teal-600 hover:underline">
@@ -85,5 +92,6 @@ export default function Privacy() {
         </div>
       </div>
     </section>
+    </>
   )
 }

@@ -171,3 +171,46 @@ export function generateJobsPageStructuredData(): Record<string, unknown> {
     },
   }
 }
+
+const FAQ_QUESTIONS = [
+  {
+    question: 'What is Traamand Employment Services?',
+    answer: 'Traamand is a registered employment agency based in Harare, Zimbabwe that connects families and businesses with Divine Seal verified domestic workers including maids, nannies, chefs, gardeners, nurse aides, drivers, sales ladies, and bar ladies.',
+  },
+  {
+    question: 'How do I hire a maid in Harare?',
+    answer: 'Browse available workers on Traamand.co.zw, select your preferred category (maids, nannies, chefs, etc.), review worker profiles with ratings and video introductions, and book in under 3 minutes. The platform handles placement fee payment, WhatsApp communication, and follow-up support.',
+  },
+  {
+    question: 'What is the Divine Seal verification?',
+    answer: 'The Divine Seal is Traamand\'s five-point verification process: national ID verification, police clearance check, medical clearance, professional training confirmation, and reference checks from previous employers. Workers with full Divine Seal have completed all five steps.',
+  },
+  {
+    question: 'How much does it cost to hire a domestic worker through Traamand?',
+    answer: 'Placement fees vary by worker and are displayed on each profile. Monthly salary ranges are negotiated directly and shown on worker profiles. Traamand offers a 30-day free replacement guarantee if you are not satisfied with your match.',
+  },
+  {
+    question: 'What areas of Harare does Traamand serve?',
+    answer: 'Traamand serves Borrowdale, Avondale, Mt Pleasant, Greendale, Highlands, Mabelreign, Hatfield, Eastlea, Belgravia, Chisipite, Glen Lorne, Marlborough, and all surrounding Harare suburbs.',
+  },
+  {
+    question: 'How quickly can I get a domestic worker?',
+    answer: 'Most bookings can be completed in under 3 minutes. Workers are available for immediate hire, with start dates as early as the next day depending on the worker\'s availability and work type preference (live-in, daily, part-time, or temporary).',
+  },
+]
+
+export function generateFAQStructuredData(): Record<string, unknown> {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    '@id': 'https://traamand.co.zw/#faq',
+    mainEntity: FAQ_QUESTIONS.map((q) => ({
+      '@type': 'Question',
+      name: q.question,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: q.answer,
+      },
+    })),
+  }
+}

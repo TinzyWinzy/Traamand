@@ -1,9 +1,16 @@
 import { Link } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { COMPANY_NAME } from '../lib/constants'
+import SEOHead from '../components/seo/SEOHead'
 
 export default function Terms() {
   return (
+    <>
+      <SEOHead
+        title="Terms of Service | Traamand Employment Services"
+        description="Read the Terms of Service for using Traamand's domestic worker placement platform in Harare, Zimbabwe."
+        canonical="https://traamand.co.zw/terms"
+      />
     <section className="bg-zinc-50 py-12 sm:py-20">
       <div className="mx-auto max-w-3xl px-4 sm:px-6">
         <Link to="/" className="mb-6 inline-flex items-center gap-1 text-sm text-teal-600 hover:underline">
@@ -83,5 +90,6 @@ export default function Terms() {
         </div>
       </div>
     </section>
+    </>
   )
 }
