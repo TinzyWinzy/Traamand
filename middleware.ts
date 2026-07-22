@@ -2,7 +2,7 @@ const PRERENDER_URL = 'https://us-central1-studio-8895863664-52c12.cloudfunction
 
 const BOT_PATTERN = /googlebot|google-structured-data-testing-tool|bingbot|slurp|duckduckbot|baiduspider|yandex|twitterbot|facebot|facebookexternalhit|linkedinbot|whatsapp|slack|discord|telegrambot|semrush|ahrefsbot|mj12bot|dotbot|crawler|spider/i
 
-export default async function middleware(request) {
+export default async function middleware(request: Request) {
   const url = new URL(request.url)
   const userAgent = request.headers.get('user-agent') || ''
   const pathname = url.pathname

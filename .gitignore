@@ -37,3 +37,8 @@ test2.jpg
 test-results/
 playwright-report/
 playwright/.cache/
+
+# Environment files
+.env
+.env.local
+.env.production

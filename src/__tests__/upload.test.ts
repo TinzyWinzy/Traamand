@@ -27,7 +27,7 @@ describe('upload utility', () => {
     const url = await uploadApplicantVideo(file, 'applicant-1')
 
     expect(ref).toHaveBeenCalledWith('mock-storage', expect.stringMatching(/^applicants\/applicant-1\/intro_\d+_intro\.mp4$/))
-    expect(uploadBytes).toHaveBeenCalledWith(expect.any(String), file)
+    expect(uploadBytes).toHaveBeenCalledWith(expect.any(String), file, { contentType: 'video/mp4' })
     expect(url).toBe('https://storage.example/file.mp4')
   })
 
@@ -36,7 +36,7 @@ describe('upload utility', () => {
     const url = await uploadWorkerVideo(file, 'worker-1')
 
     expect(ref).toHaveBeenCalledWith('mock-storage', expect.stringMatching(/^workers\/worker-1\/video_\d+_intro\.mp4$/))
-    expect(uploadBytes).toHaveBeenCalledWith(expect.any(String), file)
+    expect(uploadBytes).toHaveBeenCalledWith(expect.any(String), file, { contentType: 'video/mp4' })
     expect(url).toBe('https://storage.example/file.mp4')
   })
 

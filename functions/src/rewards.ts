@@ -135,13 +135,14 @@ export async function resolveReferralChain(referredBy: string): Promise<Referral
 
   const normalizedCode = referredBy.trim().toUpperCase()
 
-  const referrerSnap = await db().collection('users').where('referralCode', '==', normalizedCode).limit(1).get()
+  const [referrerSnap, signupsSnap] = await Promise.all([
+    db().collection('users').where('referralCode', '==', normalizedCode).limit(1).get(),
+    db().collection('users').where('referredBy', '==', normalizedCode).get(),
+  ])
   if (referrerSnap.empty) return result
 
   const referrer = referrerSnap.docs[0]
   result.referrerId = referrer.id
-
-  const signupsSnap = await db().collection('users').where('referredBy', '==', normalizedCode).get()
   result.referrerTotalSignups = signupsSnap.size
 
   const referrerData = referrer.data()
