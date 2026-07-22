@@ -10,7 +10,7 @@ import {
   Trash2,
   Video,
 } from 'lucide-react'
-import { doc, getDoc, setDoc, addDoc, serverTimestamp } from 'firebase/firestore'
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore'
 import { collection as fbCollection } from 'firebase/firestore'
 import { db } from '../../../firebase/config'
 import { uploadWorkerPhotos, uploadWorkerVideo, MAX_FILE_SIZE } from '../../../lib/upload'
@@ -201,21 +201,22 @@ export default function WorkerForm() {
 
     let photos = existingPhotos
     let videoUrl = existingVideoUrl
-    if (id) {
-      const photoUpload = photoFiles.length > 0
-        ? uploadWorkerPhotos(photoFiles, id).then((u) => { photos = [...existingPhotos, ...u] })
-        : Promise.resolve()
-      const videoUpload = videoFile
-        ? uploadWorkerVideo(videoFile, id).then((url) => { videoUrl = url })
-        : Promise.resolve()
-      try {
-        await Promise.all([photoUpload, videoUpload])
-      } catch (uploadErr: unknown) {
-        const msg = uploadErr instanceof Error ? uploadErr.message : 'Unknown upload error'
-        addToast(`Media upload failed: ${msg}`, 'error')
-        setSaving(false)
-        return
+
+    const workerId = id || doc(fbCollection(db, 'workers')).id
+
+    try {
+      if (photoFiles.length > 0) {
+        const uploaded = await uploadWorkerPhotos(photoFiles, workerId)
+        photos = [...existingPhotos, ...uploaded]
       }
+      if (videoFile) {
+        videoUrl = await uploadWorkerVideo(videoFile, workerId)
+      }
+    } catch (uploadErr: unknown) {
+      const msg = uploadErr instanceof Error ? uploadErr.message : 'Unknown upload error'
+      addToast(`Media upload failed: ${msg}`, 'error')
+      setSaving(false)
+      return
     }
 
     const workerData = {
@@ -262,38 +263,11 @@ export default function WorkerForm() {
     }
 
     try {
-      let workerId = id
       if (isEdit) {
         await setDoc(doc(db, 'workers', id!), { ...workerData, updatedAt: serverTimestamp() }, { merge: true })
       } else {
-        const docRef = await addDoc(fbCollection(db, 'workers'), workerData)
-        workerId = docRef.id
+        await setDoc(doc(db, 'workers', workerId), workerData)
       }
-
-      if (!id) {
-        const newUploads: Promise<void>[] = []
-        if (photoFiles.length > 0) {
-          newUploads.push(
-            uploadWorkerPhotos(photoFiles, workerId!).then((uploaded) =>
-              setDoc(doc(db, 'workers', workerId!), { photos: uploaded, updatedAt: serverTimestamp() }, { merge: true })
-            )
-          )
-        }
-        if (videoFile) {
-          newUploads.push(
-            uploadWorkerVideo(videoFile, workerId!).then((url) =>
-              setDoc(doc(db, 'workers', workerId!), { divineSeal: { referenceVideoUrl: url }, updatedAt: serverTimestamp() }, { merge: true })
-            )
-          )
-        }
-        try {
-          await Promise.all(newUploads)
-        } catch (uploadErr: unknown) {
-          const msg = uploadErr instanceof Error ? uploadErr.message : 'Unknown upload error'
-          addToast(`Media upload failed: ${msg}. Worker was created without photos/video.`, 'error')
-        }
-      }
-
       navigate('/admin/workers')
     } catch (saveErr: unknown) {
       const msg = saveErr instanceof Error ? saveErr.message : 'Unknown error'
