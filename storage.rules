@@ -5,7 +5,7 @@ service firebase.storage {
     match /workers/{workerId}/{allPaths=**} {
       allow read: if true;
       allow write: if request.auth != null
-        && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role in ['admin', 'verifier']
+        && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin', 'verifier']
         && request.resource.size < 20 * 1024 * 1024
         && request.resource.contentType.matches('image/.*|video/.*|application/pdf');
     }
