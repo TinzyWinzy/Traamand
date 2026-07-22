@@ -210,8 +210,9 @@ export default function WorkerForm() {
         : Promise.resolve()
       try {
         await Promise.all([photoUpload, videoUpload])
-      } catch {
-        addToast('Failed to upload photos or video', 'error')
+      } catch (uploadErr: unknown) {
+        const msg = uploadErr instanceof Error ? uploadErr.message : 'Unknown upload error'
+        addToast(`Media upload failed: ${msg}`, 'error')
         setSaving(false)
         return
       }
@@ -285,12 +286,18 @@ export default function WorkerForm() {
             )
           )
         }
-        await Promise.all(newUploads)
+        try {
+          await Promise.all(newUploads)
+        } catch (uploadErr: unknown) {
+          const msg = uploadErr instanceof Error ? uploadErr.message : 'Unknown upload error'
+          addToast(`Media upload failed: ${msg}. Worker was created without photos/video.`, 'error')
+        }
       }
 
       navigate('/admin/workers')
-    } catch {
-      addToast('Failed to save worker', 'error')
+    } catch (saveErr: unknown) {
+      const msg = saveErr instanceof Error ? saveErr.message : 'Unknown error'
+      addToast(`Failed to save worker: ${msg}`, 'error')
     }
     setSaving(false)
   }

@@ -105,10 +105,7 @@ export async function createOrUpdateUser(
     invite = null
   }
 
-  let newUserRole = invite?.role || data.role || 'client'
-  if (newUserRole === 'admin' || newUserRole === 'superadmin') {
-    newUserRole = 'client'
-  }
+  const newUserRole = invite?.role || data.role || 'client'
 
   if (userSnap.exists()) {
     const existing = userSnap.data() as any
