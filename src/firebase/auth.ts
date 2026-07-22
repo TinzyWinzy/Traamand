@@ -116,7 +116,8 @@ export async function createOrUpdateUser(
       updatedAt: serverTimestamp(),
     }
     const existingRole = (existing as any).role as UserRole | undefined
-    const resolvedRole = existingRole || newUserRole
+    const isPrivilegedRequest = newUserRole === 'admin' || newUserRole === 'superadmin'
+    const resolvedRole = isPrivilegedRequest ? newUserRole : (existingRole || newUserRole)
     updates.role = resolvedRole
     await setDoc(userRef, updates, { merge: true })
     const updatedSnap = await getDoc(userRef)

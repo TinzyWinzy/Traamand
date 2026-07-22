@@ -38,9 +38,6 @@ export default function RoleSignIn({ expectedRole, successPath, title, descripti
     setLoading(true)
     try {
       const fbUser = await signInWithGoogle()
-      if (expectedRole === 'admin') {
-        recordAdminSignInAttempt()
-      }
       const user = await createOrUpdateUser(fbUser, {
         name: fbUser.displayName || 'User',
         email: fbUser.email || '',
@@ -54,6 +51,7 @@ export default function RoleSignIn({ expectedRole, successPath, title, descripti
         }
         navigate(successPath)
       } else if (expectedRole === 'admin') {
+        recordAdminSignInAttempt()
         setError('This account is not authorized for staff access.')
       } else {
         navigate('/')
@@ -82,9 +80,6 @@ export default function RoleSignIn({ expectedRole, successPath, title, descripti
       const fbUser = isSignUp
         ? await createUserWithEmail(email, password)
         : await signInWithEmail(email, password)
-      if (expectedRole === 'admin') {
-        recordAdminSignInAttempt()
-      }
       const user = await createOrUpdateUser(fbUser, {
         name: isSignUp ? name : fbUser.displayName || email.split('@')[0],
         email,
@@ -98,6 +93,7 @@ export default function RoleSignIn({ expectedRole, successPath, title, descripti
         }
         navigate(successPath)
       } else if (expectedRole === 'admin') {
+        recordAdminSignInAttempt()
         setError('This account is not authorized for staff access.')
       } else {
         navigate('/')
