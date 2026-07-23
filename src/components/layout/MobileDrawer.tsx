@@ -70,10 +70,10 @@ export default function MobileDrawer({ open, onClose }: Props) {
           })}
           <div className="mt-4 border-t border-gray-100 pt-4 space-y-3">
             <Link
-              to="/find-a-maid"
+              to="/available-staff"
               className="block rounded-lg bg-brand-red px-4 py-3 text-center text-base font-semibold text-white transition hover:bg-brand-red-dark"
             >
-              Hire a Maid
+              Find a Worker
             </Link>
             <Link
               to="/join-our-team"

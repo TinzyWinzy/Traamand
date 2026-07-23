@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { BadgeCheck, ShieldCheck, Video, Stethoscope, GraduationCap, Star, Phone, MapPin, Briefcase } from 'lucide-react'
+import { BadgeCheck, ShieldCheck, Video, Stethoscope, GraduationCap, Star, MapPin, Briefcase, MessageCircle } from 'lucide-react'
 import type { Worker } from '../../types'
 import { WHATSAPP_NUMBERS, generateWhatsAppUrl } from '../../lib/whatsapp'
 
@@ -135,15 +135,23 @@ export default function CandidateCard({ worker }: Props) {
           )}
         </div>
 
-        <a
-          href={whatsappUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-auto inline-flex items-center justify-center gap-2 rounded-lg bg-teal-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-teal-700 active:scale-[0.98]"
-        >
-          <Phone className="h-4 w-4" />
-          Request to Hire
-        </a>
+        <div className="mt-auto flex gap-2">
+          <Link
+            to={`/worker/${worker.slug}`}
+            className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg bg-teal-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-teal-700 active:scale-[0.98]"
+          >
+            View Profile
+          </Link>
+          <a
+            href={whatsappUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center rounded-lg border border-slate-200 px-3 py-3 text-slate-500 transition hover:bg-slate-50"
+            aria-label="Contact via WhatsApp"
+          >
+            <MessageCircle className="h-5 w-5" />
+          </a>
+        </div>
       </div>
     </div>
   )

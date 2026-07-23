@@ -35,18 +35,26 @@ describe('JoinTeamForm', () => {
     expect(screen.getByText('Years of Experience')).toBeInTheDocument()
     expect(screen.getByText('Highest Education')).toBeInTheDocument()
     expect(screen.getByText('Primary Language')).toBeInTheDocument()
-    expect(screen.getByText('Next of Kin Contact')).toBeInTheDocument()
     expect(screen.getByText('Email')).toBeInTheDocument()
+  })
+
+  it('renders work preferences on step 2', async () => {
+    const { default: JoinTeamForm } = await import('../components/forms/JoinTeamForm')
+    render(<JoinTeamForm />)
+
+    fireEvent.click(screen.getByText('Next'))
     expect(screen.getByText('Work Preferences')).toBeInTheDocument()
     expect(screen.getByText('Service Areas')).toBeInTheDocument()
     expect(screen.getByText('Preferred Work Type')).toBeInTheDocument()
     expect(screen.getByText('Availability')).toBeInTheDocument()
   })
 
-  it('renders profile photo and intro video sections', async () => {
+  it('renders documents on step 3', async () => {
     const { default: JoinTeamForm } = await import('../components/forms/JoinTeamForm')
     render(<JoinTeamForm />)
 
+    fireEvent.click(screen.getByText('Next'))
+    fireEvent.click(screen.getByText('Next'))
     expect(screen.getByText('Profile Photo')).toBeInTheDocument()
     expect(screen.getByText('Upload Photo')).toBeInTheDocument()
     expect(screen.getByText('Intro Video (Optional)')).toBeInTheDocument()
@@ -84,7 +92,9 @@ describe('JoinTeamForm', () => {
     const { default: JoinTeamForm } = await import('../components/forms/JoinTeamForm')
     render(<JoinTeamForm />)
 
-    expect(screen.getByRole('button', { name: /Submit Application/i })).toBeInTheDocument()
+    fireEvent.click(screen.getByText('Next'))
+    fireEvent.click(screen.getByText('Next'))
+    expect(screen.getByRole('button', { name: /Submit/i })).toBeInTheDocument()
   })
 
   it('shows success screen after form submission with all file types', async () => {
@@ -96,21 +106,26 @@ describe('JoinTeamForm', () => {
     fireEvent.change(screen.getByPlaceholderText(/e\.g\. chido@email/i), { target: { value: 'test@email.com' } })
     fireEvent.change(screen.getByPlaceholderText(/e\.g\. 28/i), { target: { value: '30' } })
     fireEvent.change(screen.getByPlaceholderText(/e\.g\. 5/i), { target: { value: '5' } })
-    fireEvent.change(screen.getByPlaceholderText(/name and phone number/i), { target: { value: 'Mother - 0773123456' } })
 
     const selectElements = screen.getAllByRole('combobox')
     fireEvent.change(selectElements[0], { target: { value: 'Maid' } })
     fireEvent.change(selectElements[1], { target: { value: 'Primary' } })
     fireEvent.change(selectElements[2], { target: { value: 'Shona' } })
 
-    const areaBtn = screen.getByRole('button', { name: /Borrowdale/i })
-    fireEvent.click(areaBtn)
+    fireEvent.click(screen.getByText('Next'))
+
+    const areaBtns = screen.getAllByText('Borrowdale')
+    fireEvent.click(areaBtns[0])
 
     const workTypeBtn = screen.getByRole('button', { name: /Live-In/i })
     fireEvent.click(workTypeBtn)
 
     const availBtn = screen.getByRole('button', { name: /Immediately/i })
     fireEvent.click(availBtn)
+
+    fireEvent.click(screen.getByText('Next'))
+
+    fireEvent.change(screen.getByPlaceholderText(/name and phone number/i), { target: { value: 'Mother - 0773123456' } })
 
     const fileInputs = document.querySelectorAll('input[type="file"]')
     const pdfFile = new File(['dummy'], 'id.pdf', { type: 'application/pdf' })
@@ -121,11 +136,10 @@ describe('JoinTeamForm', () => {
     fireEvent.change(fileInputs[2], { target: { files: [pdfFile] } })
     fireEvent.change(fileInputs[3], { target: { files: [pdfFile] } })
 
-    fireEvent.click(screen.getByRole('button', { name: /submit application/i }))
+    fireEvent.click(screen.getByRole('button', { name: /Submit/i }))
 
     await waitFor(() => {
       expect(screen.getByText('Application Received!')).toBeInTheDocument()
     })
-    expect(screen.queryByText('Personal Information')).not.toBeInTheDocument()
   })
 })

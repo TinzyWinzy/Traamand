@@ -193,7 +193,8 @@ export default function WorkerProfile() {
               <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400">Languages</h3>
               <div className="mt-3 flex flex-wrap gap-2">
                 {worker.languages.map((lang) => (
-                  <span key={lang} className="rounded-xl bg-white px-4 py-2 text-sm font-medium text-slate-700 border border-slate-200">
+                  <span key={lang} className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-50 px-4 py-2 text-sm font-medium text-indigo-700 border border-indigo-100">
+                    <span className="text-xs">{lang === 'English' ? '🇬🇧' : lang === 'Shona' ? '🇿🇼' : lang === 'Ndebele' ? '🇿🇼' : '🌐'}</span>
                     {lang}
                   </span>
                 ))}
@@ -205,7 +206,8 @@ export default function WorkerProfile() {
               <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400">Work Preferences</h3>
               <div className="mt-3 flex flex-wrap gap-2">
                 {worker.availability.workType.map((type) => (
-                  <span key={type} className="rounded-xl bg-brand-cream px-4 py-2 text-sm font-medium capitalize text-slate-700 border border-slate-200">
+                  <span key={type} className="inline-flex items-center gap-1.5 rounded-xl bg-amber-50 px-4 py-2 text-sm font-medium capitalize text-amber-700 border border-amber-200">
+                    <Clock className="h-3.5 w-3.5" />
                     {type.replace('-', ' ')}
                   </span>
                 ))}

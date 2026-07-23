@@ -258,10 +258,10 @@ export default function Navbar() {
               </>
             )}
             <Link
-              to="/find-a-maid"
+              to="/available-staff"
               className="rounded-xl bg-brand-red px-5 py-2.5 text-sm font-bold text-white shadow-sm shadow-brand-red/20 transition-all hover:bg-brand-red-dark hover:shadow-md hover:shadow-brand-red/30 active:scale-95"
             >
-              Hire Now
+              Find a Worker
             </Link>
           </div>
 
@@ -427,11 +427,11 @@ export default function Navbar() {
               )}
 
               <Link
-                to="/find-a-maid"
+                to="/available-staff"
                 onClick={closeDrawer}
                 className="block rounded-xl bg-brand-red px-4 py-3 text-center text-sm font-bold text-white shadow-sm transition hover:bg-brand-red-dark"
               >
-                Hire Now
+                Find a Worker
               </Link>
             </div>
           </div>

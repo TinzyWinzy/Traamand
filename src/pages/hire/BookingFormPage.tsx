@@ -286,7 +286,7 @@ export default function BookingFormPage() {
           <div className="flex items-center justify-between">
             {[
               { num: 1, label: 'Schedule' },
-              { num: 2, label: 'Location' },
+              { num: 2, label: 'Your Details' },
               { num: 3, label: 'Confirm' },
             ].map((s, i) => (
               <div key={s.num} className="flex items-center">
@@ -386,15 +386,40 @@ export default function BookingFormPage() {
                     </p>
                   </div>
                 )}
+
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-slate-700">Any special requirements?</label>
+                  <div className="space-y-2">
+                    {[
+                      { key: 'cooking' as const, label: 'Cooking', emoji: '🍳' },
+                      { key: 'childcare' as const, label: 'Childcare', emoji: '👶' },
+                      { key: 'elderlyCare' as const, label: 'Elderly Care', emoji: '❤️' },
+                      { key: 'pets' as const, label: 'Pet Friendly', emoji: '🐕' },
+                      { key: 'driving' as const, label: 'Driving', emoji: '🚗' },
+                    ].map(({ key, label, emoji }) => (
+                      <label key={key} className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 p-3.5 transition hover:border-slate-300 hover:bg-slate-50">
+                        <input
+                          type="checkbox"
+                          {...register(`requirements.${key}`)}
+                          className="h-5 w-5 rounded-lg border-slate-300 text-teal-600 focus:ring-teal-500"
+                        />
+                        <span className="text-sm font-medium text-slate-700">
+                          <span className="mr-2">{emoji}</span>
+                          {label}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
 
-            {/* Step 2: Location */}
+            {/* Step 2: Your Details */}
             {step === 2 && (
               <div className="space-y-6">
                 <div>
-                  <h2 className="text-xl font-bold text-slate-900">Your contact and location</h2>
-                  <p className="mt-1 text-sm text-slate-500">We use these details for WhatsApp updates and placement follow-up.</p>
+                  <h2 className="text-xl font-bold text-slate-900">Your contact details</h2>
+                  <p className="mt-1 text-sm text-slate-500">We use these for WhatsApp updates and placement follow-up.</p>
                 </div>
 
                 <div className="grid gap-3 sm:grid-cols-2">
@@ -422,19 +447,6 @@ export default function BookingFormPage() {
                     />
                     {errors.clientEmail && (
                       <p className="mt-1.5 text-xs font-medium text-red-600">{errors.clientEmail.message}</p>
-                    )}
-                  </div>
-                  <div>
-                    <label htmlFor="clientPhone" className="mb-2 block text-sm font-semibold text-slate-700">Phone Number</label>
-                    <input
-                      id="clientPhone"
-                      type="tel"
-                      {...register('clientPhone')}
-                      placeholder="0772 123 456"
-                      className="w-full rounded-xl border border-slate-200 px-4 py-3.5 text-sm font-medium outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
-                    />
-                    {errors.clientPhone && (
-                      <p className="mt-1.5 text-xs font-medium text-red-600">{errors.clientPhone.message}</p>
                     )}
                   </div>
                   <div>
@@ -491,31 +503,6 @@ export default function BookingFormPage() {
                       readOnly
                       className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm text-slate-500 outline-none"
                     />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-semibold text-slate-700">Special Requirements</label>
-                  <div className="space-y-2">
-                    {[
-                      { key: 'cooking' as const, label: 'Cooking', emoji: '🍳' },
-                      { key: 'childcare' as const, label: 'Childcare', emoji: '👶' },
-                      { key: 'elderlyCare' as const, label: 'Elderly Care', emoji: '❤️' },
-                      { key: 'pets' as const, label: 'Pet Friendly', emoji: '🐕' },
-                      { key: 'driving' as const, label: 'Driving', emoji: '🚗' },
-                    ].map(({ key, label, emoji }) => (
-                      <label key={key} className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 p-3.5 transition hover:border-slate-300 hover:bg-slate-50">
-                        <input
-                          type="checkbox"
-                          {...register(`requirements.${key}`)}
-                          className="h-5 w-5 rounded-lg border-slate-300 text-teal-600 focus:ring-teal-500"
-                        />
-                        <span className="text-sm font-medium text-slate-700">
-                          <span className="mr-2">{emoji}</span>
-                          {label}
-                        </span>
-                      </label>
-                    ))}
                   </div>
                 </div>
               </div>

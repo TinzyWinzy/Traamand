@@ -27,8 +27,6 @@ import {
 import {
   CATEGORIES,
   COMPANY_NAME,
-  EMPLOYMENT_AGENT_SERVICES,
-  HOUSE_CLEANING_ACTIVITIES,
   PRIMARY_PHONE,
   type CategoryMeta,
 } from '../../lib/constants'
@@ -116,17 +114,6 @@ const STEPS = [
     title: 'Book & Relax',
     desc: 'Confirm your booking, pay the placement fee, and your worker arrives. 30-day replacement guarantee.',
   },
-]
-
-const SEO_AREAS = [
-  'Borrowdale',
-  'Avondale',
-  'Mt Pleasant',
-  'Greendale',
-  'Highlands',
-  'Mabelreign',
-  'Hatfield',
-  'Eastlea',
 ]
 
 const SEARCH_INTENTS = [
@@ -225,10 +212,10 @@ export default function HomePage() {
 
             <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
               <Link
-                to="/hire/maids"
+                to="/available-staff"
                 className="group inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-red px-8 py-4 text-base font-bold text-white shadow-lg shadow-brand-red/25 transition-all hover:bg-brand-red-dark hover:shadow-xl hover:shadow-brand-red/30 active:scale-95 sm:w-auto"
               >
-                Find a Worker Now
+                Find a Worker
                 <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-0.5" />
               </Link>
               <a
@@ -257,73 +244,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="border-y border-slate-200 bg-white py-10">
-        <div className="mx-auto grid max-w-7xl gap-8 px-4 sm:px-6 lg:grid-cols-[1.2fr_0.8fr] lg:px-8">
-          <div>
-            <h2 className="text-2xl font-extrabold tracking-tight text-slate-900">
-              Maids and Domestic Workers Near You in Harare
-            </h2>
-            <p className="mt-3 text-sm leading-7 text-slate-600">
-              Traamand helps households find verified maids, housekeepers, nannies, chefs,
-              gardeners, nurse aides, drivers, sales ladies, and bar ladies in Harare. We support
-              clients searching for domestic help near me, maid services in Harare, nanny services,
-              part-time housekeepers, live-in maids, and trusted household staff with checks before
-              placement.
-            </p>
-          </div>
-          <div>
-            <h3 className="text-sm font-bold uppercase tracking-wide text-slate-500">Service areas</h3>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {SEO_AREAS.map((area) => (
-                <span key={area} className="rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-700">
-                  {area}
-                </span>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
 
-      <section className="border-b border-slate-200 bg-white py-12">
-        <div className="mx-auto grid max-w-7xl gap-10 px-4 sm:px-6 lg:grid-cols-2 lg:px-8">
-          <div>
-            <h2 className="text-2xl font-extrabold tracking-tight text-slate-900">
-              House Cleaning Services Traamand Maids Can Cover
-            </h2>
-            <p className="mt-3 text-sm leading-7 text-slate-600">
-              For clients searching house cleaning in Harare, home cleaning services, cleaners
-              near me, or maid services, Traamand maids can support everyday housekeeping and
-              heavier cleaning jobs. The goal is simple: match households with reliable people who
-              can handle the work that actually happens inside a home.
-            </p>
-            <div className="mt-5 grid gap-2 sm:grid-cols-2">
-              {HOUSE_CLEANING_ACTIVITIES.map((activity) => (
-                <div key={activity} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700">
-                  {activity}
-                </div>
-              ))}
-            </div>
-          </div>
-          <div>
-            <h2 className="text-2xl font-extrabold tracking-tight text-slate-900">
-              Employment Agent for Carefully Selected Service Providers
-            </h2>
-            <p className="mt-3 text-sm leading-7 text-slate-600">
-              Traamand is not only for maid services. The employment agency model covers multiple
-              household and workplace roles, with screening, applicant review, admin follow-up,
-              and WhatsApp support built into the placement process.
-            </p>
-            <div className="mt-5 space-y-2">
-              {EMPLOYMENT_AGENT_SERVICES.map((service) => (
-                <div key={service} className="flex items-center gap-3 rounded-lg border border-teal-100 bg-teal-50 px-3 py-2 text-sm font-semibold text-teal-800">
-                  <BadgeCheck className="h-4 w-4 shrink-0 text-teal-600" />
-                  {service}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/*  TRUST BAR  */}
       <section className="border-b border-slate-200 bg-white">
@@ -438,10 +359,10 @@ export default function HomePage() {
 
           <div className="mt-14 flex items-center justify-center gap-3">
             <Link
-              to="/hire/maids"
+              to="/available-staff"
               className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-6 py-3 text-sm font-bold text-white shadow-md transition-all hover:bg-teal-700 hover:shadow-lg active:scale-95"
             >
-              Start Hiring Now
+              Find a Worker
               <ChevronRight className="h-4 w-4" />
             </Link>
           </div>
@@ -546,10 +467,10 @@ export default function HomePage() {
             </p>
             <div className="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
               <Link
-                to="/hire/maids"
+                to="/available-staff"
                 className="group inline-flex w-full items-center justify-center gap-2 rounded-lg bg-white px-8 py-4 text-base font-bold text-teal-700 shadow-lg shadow-black/10 transition-all hover:bg-teal-50 hover:shadow-xl active:scale-95 sm:w-auto"
               >
-                Browse Available Workers
+                Browse Workers
                 <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-0.5" />
               </Link>
               <Link

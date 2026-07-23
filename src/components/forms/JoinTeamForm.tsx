@@ -66,6 +66,7 @@ const INITIAL: FormData = {
 
 export default function JoinTeamForm() {
   const { user } = useAuthStore()
+  const [step, setStep] = useState(1)
   const [data, setData] = useState<FormData>(INITIAL)
   const [photoFile, setPhotoFile] = useState<File | null>(null)
   const [photoPreview, setPhotoPreview] = useState<string>('')
@@ -350,14 +351,31 @@ export default function JoinTeamForm() {
       </div>
 
       <form onSubmit={onSubmit} className="rounded-2xl bg-white p-6 shadow-md sm:p-10">
-        <div className="mb-8">
-          <h2 className="text-xl font-bold text-slate-900">Personal Information</h2>
-          <p className="mt-1 text-sm text-slate-500">
-            All information is kept confidential and used only for recruitment.
-          </p>
+        <div className="mb-8 flex items-center justify-between">
+          {[
+            { num: 1, label: 'Personal Info' },
+            { num: 2, label: 'Work' },
+            { num: 3, label: 'Documents' },
+          ].map((s, i) => (
+            <div key={s.num} className="flex items-center">
+              <div className="flex flex-col items-center">
+                <div className={`flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold transition-all ${
+                  step > s.num ? 'bg-teal-600 text-white' : step === s.num ? 'bg-teal-600 text-white shadow-lg shadow-teal-200' : 'bg-slate-100 text-slate-400'
+                }`}>
+                  {step > s.num ? <Check className="h-4 w-4" /> : s.num}
+                </div>
+                <span className={`mt-1.5 text-[10px] font-semibold ${step >= s.num ? 'text-teal-700' : 'text-slate-400'}`}>
+                  {s.label}
+                </span>
+              </div>
+              {i < 2 && <div className={`mx-2 h-0.5 w-10 rounded-full sm:w-16 ${step > s.num ? 'bg-teal-600' : 'bg-slate-200'}`} />}
+            </div>
+          ))}
         </div>
 
-        <div className="space-y-5">
+        <div style={{ display: step === 1 ? '' : 'none' }}>
+          <h2 className="text-xl font-bold text-slate-900 mb-6">Personal Information</h2>
+          <div className="space-y-5">
           <Field label="Position Applying For" error={didValidate ? errors.position : undefined}>
             <select
               value={data.position}
@@ -480,10 +498,11 @@ export default function JoinTeamForm() {
               })}
             </div>
           </Field>
+          </div></div>
 
-          <div className="border-t border-slate-100 pt-6">
-            <h3 className="mb-1 text-lg font-bold text-slate-900">Work Preferences</h3>
-            <p className="mb-4 text-sm text-slate-500">Help us match you with the right jobs</p>
+        <div style={{ display: step === 2 ? '' : 'none' }}>
+          <h2 className="text-xl font-bold text-slate-900 mb-6">Work Preferences</h2>
+          <div className="space-y-5">
 
             <Field label="Service Areas" error={didValidate ? errors.serviceAreas : undefined}>
               <div className="max-h-60 space-y-3 overflow-y-auto rounded-lg border border-slate-200 p-4">
@@ -585,7 +604,11 @@ export default function JoinTeamForm() {
               </Field>
             </div>
           </div>
+        </div>
 
+        <div style={{ display: step === 3 ? '' : 'none' }}>
+          <h2 className="text-xl font-bold text-slate-900 mb-6">Documents &amp; Submit</h2>
+          <div className="space-y-5">
           <Field label="Next of Kin Contact" error={didValidate ? errors.nextOfKinContact : undefined}>
             <input
               type="text"
@@ -703,14 +726,22 @@ export default function JoinTeamForm() {
           {submitError && (
             <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{submitError}</p>
           )}
-          <button
-            type="submit"
-            disabled={uploading}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-teal-600 px-6 py-4 text-sm font-bold text-white transition hover:bg-teal-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {uploading && <Loader2 className="h-4 w-4 animate-spin" />}
-            {uploading ? 'Uploading files...' : 'Submit Application'}
-          </button>
+          </div>
+        </div>
+
+        <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-6">
+          <button type="button" onClick={() => setStep((s) => Math.max(s - 1, 1))} disabled={step === 1}
+            className="rounded-lg border border-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-30">Back</button>
+          <span className="text-xs text-slate-400">Step {step} of 3</span>
+          {step < 3 ? (
+            <button type="button" onClick={() => setStep((s) => Math.min(s + 1, 3))}
+              className="rounded-lg bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-teal-700">Next</button>
+          ) : (
+            <button type="submit" disabled={uploading}
+              className="rounded-lg bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-60">
+              {uploading ? 'Uploading…' : 'Submit'}
+            </button>
+          )}
         </div>
       </form>
     </>

@@ -1,5 +1,5 @@
 import { Suspense, useEffect, useState } from 'react'
-import { Routes, Route, useNavigate, useLocation } from 'react-router-dom'
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import Navbar from './components/layout/Navbar'
 import Footer from './components/layout/Footer'
 import WhatsAppWidget from './components/whatsapp/WhatsAppWidget'
@@ -20,7 +20,6 @@ function ScrollToTop() {
 }
 
 const AvailableStaff = lazyWithRetry(() => import('./pages/AvailableStaff'))
-const FindMaid = lazyWithRetry(() => import('./pages/FindMaid'))
 const JoinTeam = lazyWithRetry(() => import('./pages/JoinTeam'))
 const NotFound = lazyWithRetry(() => import('./pages/NotFound'))
 const Terms = lazyWithRetry(() => import('./pages/Terms'))
@@ -178,7 +177,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/available-staff" element={<AvailableStaff />} />
-          <Route path="/find-a-maid" element={<FindMaid />} />
+          <Route path="/find-a-maid" element={<Navigate to="/available-staff" replace />} />
           <Route path="/join-our-team" element={<JoinTeam />} />
           <Route path="/sign-in" element={<SignIn />} />
           <Route path="/admin/sign-in" element={<AdminSignIn />} />
