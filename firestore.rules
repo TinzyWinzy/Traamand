@@ -138,5 +138,11 @@ service cloud.firestore {
       allow create, delete: if isAdmin();
       allow update: if isAdmin() || isInvitedUser();
     }
+
+    match /errorLogs/{logId} {
+      allow create: if true;
+      allow read, delete: if isAdmin();
+      allow update: if false;
+    }
   }
 }

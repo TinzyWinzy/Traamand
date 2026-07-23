@@ -125,7 +125,7 @@ export default function WorkerProfile() {
 
             <div className="flex items-center gap-5">
               {worker.photos?.[0] ? (
-                <img src={worker.photos[0]} alt={worker.displayName} className="h-24 w-24 shrink-0 rounded-3xl object-cover object-top shadow-2xl border-2 border-white/20" />
+                <img src={worker.photos[0]} alt={worker.displayName} loading="lazy" className="h-24 w-24 shrink-0 rounded-3xl object-cover object-top shadow-2xl border-2 border-white/20" />
               ) : (
                 <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-3xl bg-white/15 text-4xl font-extrabold text-white shadow-2xl border-2 border-white/20">
                   {worker.displayName.charAt(0)}

@@ -41,3 +41,5 @@ export {
   generateWorkerSEO,
   updateLocationStats,
 } from './seo'
+
+export { dailyFirestoreExport } from './backup'

@@ -325,7 +325,7 @@ export default function BookingFormPage() {
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm font-semibold text-slate-700">Work Type</label>
+                  <label htmlFor="workType" className="mb-2 block text-sm font-semibold text-slate-700">Work Type</label>
                   <Controller
                     name="workType"
                     control={control}
@@ -360,10 +360,11 @@ export default function BookingFormPage() {
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm font-semibold text-slate-700">Start Date</label>
+                  <label htmlFor="startDate" className="mb-2 block text-sm font-semibold text-slate-700">Start Date</label>
                   <div className="relative">
                     <Calendar className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
                     <input
+                      id="startDate"
                       type="date"
                       {...register('startDate')}
                       className="w-full rounded-xl border border-slate-200 py-3.5 pl-11 pr-4 text-sm font-medium outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
@@ -398,8 +399,9 @@ export default function BookingFormPage() {
 
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div>
-                    <label className="mb-2 block text-sm font-semibold text-slate-700">Full Name</label>
+                    <label htmlFor="clientName" className="mb-2 block text-sm font-semibold text-slate-700">Full Name</label>
                     <input
+                      id="clientName"
                       type="text"
                       {...register('clientName')}
                       placeholder="e.g. Tendai Mukanya"
@@ -410,8 +412,9 @@ export default function BookingFormPage() {
                     )}
                   </div>
                   <div>
-                    <label className="mb-2 block text-sm font-semibold text-slate-700">Email</label>
+                    <label htmlFor="clientEmail" className="mb-2 block text-sm font-semibold text-slate-700">Email</label>
                     <input
+                      id="clientEmail"
                       type="email"
                       {...register('clientEmail')}
                       placeholder="you@example.com"
@@ -422,8 +425,9 @@ export default function BookingFormPage() {
                     )}
                   </div>
                   <div>
-                    <label className="mb-2 block text-sm font-semibold text-slate-700">Phone Number</label>
+                    <label htmlFor="clientPhone" className="mb-2 block text-sm font-semibold text-slate-700">Phone Number</label>
                     <input
+                      id="clientPhone"
                       type="tel"
                       {...register('clientPhone')}
                       placeholder="0772 123 456"
@@ -434,8 +438,9 @@ export default function BookingFormPage() {
                     )}
                   </div>
                   <div>
-                    <label className="mb-2 block text-sm font-semibold text-slate-700">WhatsApp Number</label>
+                    <label htmlFor="clientWhatsapp" className="mb-2 block text-sm font-semibold text-slate-700">WhatsApp Number</label>
                     <input
+                      id="clientWhatsapp"
                       type="tel"
                       {...register('clientWhatsapp')}
                       placeholder="0772 123 456"
@@ -448,10 +453,11 @@ export default function BookingFormPage() {
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm font-semibold text-slate-700">Street Address</label>
+                  <label htmlFor="street" className="mb-2 block text-sm font-semibold text-slate-700">Street Address</label>
                   <div className="relative">
                     <MapPin className="absolute left-4 top-3.5 h-5 w-5 text-slate-400" />
                     <input
+                      id="street"
                       type="text"
                       {...register('street')}
                       placeholder="e.g. 12 Avondale Road"
@@ -465,8 +471,9 @@ export default function BookingFormPage() {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="mb-2 block text-sm font-semibold text-slate-700">Suburb</label>
+                    <label htmlFor="suburb" className="mb-2 block text-sm font-semibold text-slate-700">Suburb</label>
                     <input
+                      id="suburb"
                       type="text"
                       {...register('suburb')}
                       placeholder="e.g. Avondale"

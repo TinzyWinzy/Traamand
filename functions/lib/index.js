@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateLocationStats = exports.generateWorkerSEO = exports.onApplicantAudit = exports.onBookingCompleted = exports.onApplicantConverted = exports.onUserCreated = exports.sendReplacementAlert = exports.onBookingAuditAndAvailability = exports.scheduleCheckIns = exports.sendBookingConfirmation = exports.matchWorkerToBooking = exports.payoutCallback = exports.processPayout = exports.paynowCallback = exports.pollPaynowPayment = exports.processPaynowPayment = exports.initializeAdminUsers = exports.verifyAdminAccess = exports.setUserRole = exports.prerender = exports.sitemap = void 0;
+exports.dailyFirestoreExport = exports.updateLocationStats = exports.generateWorkerSEO = exports.onApplicantAudit = exports.onBookingCompleted = exports.onApplicantConverted = exports.onUserCreated = exports.sendReplacementAlert = exports.onBookingAuditAndAvailability = exports.scheduleCheckIns = exports.sendBookingConfirmation = exports.matchWorkerToBooking = exports.payoutCallback = exports.processPayout = exports.paynowCallback = exports.pollPaynowPayment = exports.processPaynowPayment = exports.initializeAdminUsers = exports.verifyAdminAccess = exports.setUserRole = exports.prerender = exports.sitemap = void 0;
 const admin = __importStar(require("firebase-admin"));
 const v2_1 = require("firebase-functions/v2");
 admin.initializeApp();
@@ -67,3 +67,5 @@ Object.defineProperty(exports, "onApplicantAudit", { enumerable: true, get: func
 var seo_1 = require("./seo");
 Object.defineProperty(exports, "generateWorkerSEO", { enumerable: true, get: function () { return seo_1.generateWorkerSEO; } });
 Object.defineProperty(exports, "updateLocationStats", { enumerable: true, get: function () { return seo_1.updateLocationStats; } });
+var backup_1 = require("./backup");
+Object.defineProperty(exports, "dailyFirestoreExport", { enumerable: true, get: function () { return backup_1.dailyFirestoreExport; } });

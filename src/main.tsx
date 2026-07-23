@@ -5,8 +5,14 @@ import { HelmetProvider } from 'react-helmet-async'
 import App from './App'
 import './index.css'
 import { markAppLoaded } from './lib/chunkRecovery'
+import { initGlobalErrorHandlers } from './lib/errorLogger'
 
+initGlobalErrorHandlers()
 markAppLoaded()
+
+import('./firebase/config').then(({ perf }) => {
+  if (perf) perf.dataCollectionEnabled = true
+})
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

@@ -28,6 +28,7 @@ export default function CandidateCard({ worker }: Props) {
           <img
             src={worker.photos[0]}
             alt={worker.displayName}
+            loading="lazy"
             className="h-full w-full object-cover object-top"
           />
         ) : (

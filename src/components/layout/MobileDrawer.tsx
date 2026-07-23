@@ -30,6 +30,9 @@ export default function MobileDrawer({ open, onClose }: Props) {
       )}
 
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Navigation menu"
         className={`fixed top-0 right-0 z-50 h-full w-72 bg-white shadow-xl transition-transform duration-300 md:hidden ${
           open ? 'translate-x-0' : 'translate-x-full'
         }`}

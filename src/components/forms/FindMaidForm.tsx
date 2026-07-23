@@ -284,8 +284,9 @@ export default function FindMaidForm() {
           <p className="text-sm text-slate-500">
             We&apos;ll use this to match you with the best domestic worker.
           </p>
-          <Field label="Full Name" error={errors.fullName}>
+          <Field label="Full Name" htmlFor="find-fullName" error={errors.fullName}>
             <input
+              id="find-fullName"
               type="text"
               value={data.fullName}
               onChange={(e) => update('fullName', e.target.value)}
@@ -293,8 +294,9 @@ export default function FindMaidForm() {
               className="w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
             />
           </Field>
-          <Field label="WhatsApp Contact Number" error={errors.phone}>
+          <Field label="WhatsApp Contact Number" htmlFor="find-phone" error={errors.phone}>
             <input
+              id="find-phone"
               type="tel"
               value={data.phone}
               onChange={(e) => update('phone', e.target.value)}
@@ -302,8 +304,9 @@ export default function FindMaidForm() {
               className="w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
             />
           </Field>
-          <Field label="Email (optional)">
+          <Field label="Email (optional)" htmlFor="find-email">
             <input
+              id="find-email"
               type="email"
               value={data.email}
               onChange={(e) => update('email', e.target.value)}
@@ -551,10 +554,10 @@ export default function FindMaidForm() {
   )
 }
 
-function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
+function Field({ label, htmlFor, error, children }: { label: string; htmlFor?: string; error?: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="mb-1.5 block text-sm font-medium text-slate-700">{label}</label>
+      <label htmlFor={htmlFor} className="mb-1.5 block text-sm font-medium text-slate-700">{label}</label>
       {children}
       {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
     </div>

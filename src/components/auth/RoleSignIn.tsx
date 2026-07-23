@@ -182,10 +182,11 @@ export default function RoleSignIn({ expectedRole, successPath, title, descripti
               <form onSubmit={handleEmailAuth} className="space-y-5">
                 {isSignUp && (
                   <div>
-                    <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500">Full Name</label>
+                    <label htmlFor="signin-name" className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500">Full Name</label>
                     <div className="relative">
                       <UserIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                       <input
+                        id="signin-name"
                         type="text"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
@@ -198,10 +199,11 @@ export default function RoleSignIn({ expectedRole, successPath, title, descripti
                 )}
 
                 <div>
-                  <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500">Email Address</label>
+                  <label htmlFor="signin-email" className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500">Email Address</label>
                   <div className="relative">
                     <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                     <input
+                      id="signin-email"
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
@@ -213,10 +215,11 @@ export default function RoleSignIn({ expectedRole, successPath, title, descripti
                 </div>
 
                 <div>
-                  <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500">Password</label>
+                  <label htmlFor="signin-password" className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500">Password</label>
                   <div className="relative">
                     <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                     <input
+                      id="signin-password"
                       type="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}

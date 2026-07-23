@@ -299,6 +299,7 @@ export default function Navbar() {
                     key={link.to}
                     to={link.to}
                     onClick={closeDrawer}
+                    aria-current={isActive ? 'page' : undefined}
                     className={`block rounded-xl px-4 py-3 text-sm font-semibold transition ${
                       isActive
                         ? 'bg-teal-50 text-teal-700'
