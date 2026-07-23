@@ -3,19 +3,20 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Users, UserCircle, BookOpen, DollarSign,
   Menu, X, LogOut, Shield, UserPlus, Smartphone,
-  CheckCircle, Video, GitCompareArrows,
+  CheckCircle, Video, GitCompareArrows, Activity,
 } from 'lucide-react'
 import { signOut } from 'firebase/auth'
 import { auth } from '../../firebase/config'
 import { useAuthStore } from '../../stores/authStore'
 
-const NAV_SECTIONS: { label: string; items: { label: string; to: string; icon: any }[] }[] = [
-  {
-    label: 'Overview',
-    items: [
-      { label: 'Dashboard', to: '/admin', icon: LayoutDashboard },
-    ],
-  },
+function getNavSections(role: string | undefined): { label: string; items: { label: string; to: string; icon: any }[] }[] {
+  const sections = [
+    {
+      label: 'Overview',
+      items: [
+        { label: 'Dashboard', to: '/admin', icon: LayoutDashboard },
+      ],
+    },
   {
     label: 'Operations',
     items: [
@@ -48,6 +49,16 @@ const NAV_SECTIONS: { label: string; items: { label: string; to: string; icon: a
     ],
   },
 ]
+  if (role === 'superadmin') {
+    sections.push({
+      label: 'System',
+      items: [
+        { label: 'Super Dashboard', to: '/admin/super', icon: Activity },
+      ],
+    })
+  }
+  return sections
+}
 
 export default function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -89,7 +100,7 @@ export default function AdminLayout() {
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-4">
-          {NAV_SECTIONS.map((section) => (
+          {getNavSections(user?.role).map((section) => (
             <div key={section.label}>
               <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">{section.label}</p>
               <div className="space-y-0.5">

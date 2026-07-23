@@ -23,12 +23,12 @@ export default function CandidateCard({ worker }: Props) {
 
   return (
     <div className="flex flex-col rounded-xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md">
-      <div className="relative aspect-[4/3] overflow-hidden rounded-t-xl bg-slate-100">
+      <div className="relative aspect-[3/4] overflow-hidden rounded-t-xl bg-slate-100">
         {worker.photos?.[0] ? (
           <img
             src={worker.photos[0]}
             alt={worker.displayName}
-            className="h-full w-full object-cover"
+            className="h-full w-full object-cover object-top"
           />
         ) : (
           <div className="flex h-full items-center justify-center text-slate-300">

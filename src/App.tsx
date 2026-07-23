@@ -61,6 +61,7 @@ const ApplicantDashboard = lazyWithRetry(() => import('./pages/applicant/Applica
 const ClientDashboard = lazyWithRetry(() => import('./pages/client/ClientDashboard'))
 const MyPayments = lazyWithRetry(() => import('./pages/my-payments/MyPayments'))
 const AdminReconciliation = lazyWithRetry(() => import('./pages/admin/reconciliation/AdminReconciliation'))
+const SuperAdminDashboard = lazyWithRetry(() => import('./pages/admin/SuperAdminDashboard'))
 
 function AuthRoute({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate()
@@ -72,6 +73,15 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
   return (
     <AuthGuard requireRole="admin" navigate={navigate}>
       <AdminServerCheck>{children}</AdminServerCheck>
+    </AuthGuard>
+  )
+}
+
+function SuperAdminRoute({ children }: { children: React.ReactNode }) {
+  const navigate = useNavigate()
+  return (
+    <AuthGuard requireRole="superadmin" navigate={navigate}>
+      {children}
     </AuthGuard>
   )
 }
@@ -278,6 +288,11 @@ export default function App() {
             <Route path="tasks" element={<AdminVerifierTasks />} />
             <Route path="matches" element={<AdminMatches />} />
             <Route path="reconciliation" element={<AdminReconciliation />} />
+            <Route path="super" element={
+              <SuperAdminRoute>
+                <SuperAdminDashboard />
+              </SuperAdminRoute>
+            } />
           </Route>
           <Route path="/terms" element={<Terms />} />
           <Route path="/privacy" element={<Privacy />} />

@@ -26,8 +26,6 @@ export default function AdminDashboard() {
     referralEarnings: 0,
   })
   const [recentBookings, setRecentBookings] = useState<Booking[]>([])
-  const [initStatus, setInitStatus] = useState<string | null>(null)
-  const [initLoading, setInitLoading] = useState(false)
   const [loading, setLoading] = useState(true)
 
   const fetchStats = useCallback(async () => {
@@ -231,34 +229,6 @@ export default function AdminDashboard() {
           )}
         </div>
 
-        {/* System Tools */}
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-lg font-bold text-slate-900 mb-4">System Tools</h2>
-          <button
-            onClick={async () => {
-              setInitLoading(true)
-              setInitStatus(null)
-              try {
-                const { getFunctions, httpsCallable } = await import('firebase/functions')
-                const fn = httpsCallable(getFunctions(), 'initializeAdminUsers')
-                const res = await fn()
-                setInitStatus('done')
-                console.log('[initializeAdminUsers]', res.data)
-              } catch (e) {
-                setInitStatus('error')
-                console.error('[initializeAdminUsers]', e)
-              }
-              setInitLoading(false)
-            }}
-            disabled={initLoading}
-            className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-50"
-          >
-            {initLoading ? 'Running...' : 'Initialize Admin Users'}
-          </button>
-          {initStatus === 'done' && <p className="mt-2 text-xs text-green-600">Done. Check console for details.</p>}
-          {initStatus === 'error' && <p className="mt-2 text-xs text-red-600">Failed. Check console for details.</p>}
-          <p className="mt-1 text-xs text-slate-400">Syncs admin emails from code to Firestore auth claims.</p>
-        </div>
       </div>
     </div>
   )
