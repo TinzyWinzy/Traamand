@@ -87,6 +87,7 @@ export const initializeAdminUsers = onCall(async (request) => {
   const adminUsers = [
     { email: 'brandontinoz@gmail.com', role: 'superadmin' as const },
     { email: 'tmandovha@gmail.com', role: 'admin' as const },
+    { email: 'hanzohanic@gmail.com', role: 'admin' as const },
   ]
 
   const results = []

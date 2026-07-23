@@ -105,6 +105,7 @@ exports.initializeAdminUsers = (0, https_1.onCall)(async (request) => {
     const adminUsers = [
         { email: 'brandontinoz@gmail.com', role: 'superadmin' },
         { email: 'tmandovha@gmail.com', role: 'admin' },
+        { email: 'hanzohanic@gmail.com', role: 'admin' },
     ];
     const results = [];
     for (const adminUser of adminUsers) {

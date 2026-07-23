@@ -23,23 +23,38 @@ const categoriesCol = () => collection(db, 'categories')
 const locationPagesCol = () => collection(db, 'locationPages')
 
 export async function getWorker(slug: string): Promise<Worker | null> {
-  const q = query(workersCol(), where('slug', '==', slug), limit(1))
-  const snap = await getDocs(q)
-  if (snap.empty) return null
-  const docSnap = snap.docs[0]
-  return { id: docSnap.id, ...docSnap.data() } as Worker
+  try {
+    const q = query(workersCol(), where('slug', '==', slug), limit(1))
+    const snap = await getDocs(q)
+    if (snap.empty) return null
+    const docSnap = snap.docs[0]
+    return { id: docSnap.id, ...docSnap.data() } as Worker
+  } catch (err) {
+    console.error('[getWorker] Firestore error:', err)
+    return null
+  }
 }
 
 export async function getWorkerById(workerId: string): Promise<Worker | null> {
-  const docSnap = await getDoc(doc(workersCol(), workerId))
-  if (!docSnap.exists()) return null
-  return { id: docSnap.id, ...docSnap.data() } as Worker
+  try {
+    const docSnap = await getDoc(doc(workersCol(), workerId))
+    if (!docSnap.exists()) return null
+    return { id: docSnap.id, ...docSnap.data() } as Worker
+  } catch (err) {
+    console.error('[getWorkerById] Firestore error:', err)
+    return null
+  }
 }
 
 export async function getWorkers(constraints: QueryConstraint[] = []): Promise<Worker[]> {
-  const baseQuery = query(workersCol(), where('isActive', '==', true), ...constraints)
-  const snap = await getDocs(baseQuery)
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Worker)
+  try {
+    const baseQuery = query(workersCol(), where('isActive', '==', true), ...constraints)
+    const snap = await getDocs(baseQuery)
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Worker)
+  } catch (err) {
+    console.error('[getWorkers] Firestore error:', err)
+    return []
+  }
 }
 
 export async function getAvailableWorkers(): Promise<Worker[]> {
@@ -56,83 +71,122 @@ export async function getAvailableWorkers(): Promise<Worker[]> {
 }
 
 export async function getWorkersByCategory(category: string): Promise<Worker[]> {
-  return getWorkers([
-    where('skills', 'array-contains', category.toLowerCase()),
-    orderBy('rating', 'desc'),
-    limit(50),
-  ])
+  try {
+    return getWorkers([
+      where('skills', 'array-contains', category.toLowerCase()),
+      orderBy('rating', 'desc'),
+      limit(50),
+    ])
+  } catch (err) {
+    console.error('[getWorkersByCategory] Firestore error:', err)
+    return []
+  }
 }
 
 export async function getWorkersByLocation(
   suburb: string,
   category?: string
 ): Promise<Worker[]> {
-  const constraints: QueryConstraint[] = [
-    where('availability.preferredLocations', 'array-contains', suburb),
-    orderBy('rating', 'desc'),
-    limit(50),
-  ]
-  const snap = await getDocs(query(workersCol(), where('isActive', '==', true), ...constraints))
-  let results = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Worker)
-  if (category) {
-    results = results.filter((w) =>
-      w.skills.some((s) => s.toLowerCase() === category.toLowerCase())
-    )
+  try {
+    const snap = await getDocs(query(workersCol(), where('isActive', '==', true),
+      where('availability.preferredLocations', 'array-contains', suburb),
+      orderBy('rating', 'desc'),
+      limit(50),
+    ))
+    let results = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Worker)
+    if (category) {
+      results = results.filter((w) =>
+        w.skills.some((s) => s.toLowerCase() === category.toLowerCase())
+      )
+    }
+    return results
+  } catch (err) {
+    console.error('[getWorkersByLocation] Firestore error:', err)
+    return []
   }
-  return results
 }
 
 export async function getCategories(): Promise<Category[]> {
-  const q = query(categoriesCol(), orderBy('sortOrder', 'asc'))
-  const snap = await getDocs(q)
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Category)
+  try {
+    const q = query(categoriesCol(), orderBy('sortOrder', 'asc'))
+    const snap = await getDocs(q)
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Category)
+  } catch (err) {
+    console.error('[getCategories] Firestore error:', err)
+    return []
+  }
 }
 
 export async function getCategory(slug: string): Promise<Category | null> {
-  const q = query(categoriesCol(), where('slug', '==', slug), limit(1))
-  const snap = await getDocs(q)
-  if (snap.empty) return null
-  const docSnap = snap.docs[0]
-  return { id: docSnap.id, ...docSnap.data() } as Category
+  try {
+    const q = query(categoriesCol(), where('slug', '==', slug), limit(1))
+    const snap = await getDocs(q)
+    if (snap.empty) return null
+    const docSnap = snap.docs[0]
+    return { id: docSnap.id, ...docSnap.data() } as Category
+  } catch (err) {
+    console.error('[getCategory] Firestore error:', err)
+    return null
+  }
 }
 
 export async function getClientBookings(clientId: string): Promise<Booking[]> {
-  const q = query(
-    bookingsCol(),
-    where('clientId', '==', clientId),
-    orderBy('createdAt', 'desc'),
-    limit(50)
-  )
-  const snap = await getDocs(q)
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Booking)
+  try {
+    const q = query(
+      bookingsCol(),
+      where('clientId', '==', clientId),
+      orderBy('createdAt', 'desc'),
+      limit(50)
+    )
+    const snap = await getDocs(q)
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Booking)
+  } catch (err) {
+    console.error('[getClientBookings] Firestore error:', err)
+    return []
+  }
 }
 
 export async function getBooking(bookingId: string): Promise<Booking | null> {
-  const docSnap = await getDoc(doc(bookingsCol(), bookingId))
-  if (!docSnap.exists()) return null
-  return { id: docSnap.id, ...docSnap.data() } as Booking
+  try {
+    const docSnap = await getDoc(doc(bookingsCol(), bookingId))
+    if (!docSnap.exists()) return null
+    return { id: docSnap.id, ...docSnap.data() } as Booking
+  } catch (err) {
+    console.error('[getBooking] Firestore error:', err)
+    return null
+  }
 }
 
 export async function createBooking(
   data: Omit<Booking, 'id' | 'createdAt' | 'updatedAt'>
 ): Promise<string> {
-  const docRef = await addDoc(bookingsCol(), {
-    ...data,
-    platformFeePercent: data.platformFeePercent ?? 0,
-    platformCutAmount: data.platformCutAmount ?? 0,
-    traamandNetRevenue: data.traamandNetRevenue ?? 0,
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
-  })
-  return docRef.id
+  try {
+    const docRef = await addDoc(bookingsCol(), {
+      ...data,
+      platformFeePercent: data.platformFeePercent ?? 0,
+      platformCutAmount: data.platformCutAmount ?? 0,
+      traamandNetRevenue: data.traamandNetRevenue ?? 0,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    })
+    return docRef.id
+  } catch (err) {
+    console.error('[createBooking] Firestore error:', err)
+    throw err
+  }
 }
 
 export async function updateBooking(
   bookingId: string,
   data: Partial<Booking>
 ): Promise<void> {
-  const bookingRef = doc(bookingsCol(), bookingId)
-  await setDoc(bookingRef, { ...data, updatedAt: serverTimestamp() }, { merge: true })
+  try {
+    const bookingRef = doc(bookingsCol(), bookingId)
+    await setDoc(bookingRef, { ...data, updatedAt: serverTimestamp() }, { merge: true })
+  } catch (err) {
+    console.error('[updateBooking] Firestore error:', err)
+    throw err
+  }
 }
 
 export async function getLocationPage(
@@ -140,33 +194,48 @@ export async function getLocationPage(
   suburb: string,
   serviceType: string
 ): Promise<LocationPage | null> {
-  const id = `${city.toLowerCase()}-${suburb.toLowerCase()}-${serviceType.toLowerCase()}`.replace(/\s+/g, '-')
-  const docSnap = await getDoc(doc(locationPagesCol(), id))
-  if (!docSnap.exists()) return null
-  return { id: docSnap.id, ...docSnap.data() } as LocationPage
+  try {
+    const id = `${city.toLowerCase()}-${suburb.toLowerCase()}-${serviceType.toLowerCase()}`.replace(/\s+/g, '-')
+    const docSnap = await getDoc(doc(locationPagesCol(), id))
+    if (!docSnap.exists()) return null
+    return { id: docSnap.id, ...docSnap.data() } as LocationPage
+  } catch (err) {
+    console.error('[getLocationPage] Firestore error:', err)
+    return null
+  }
 }
 
 export async function getLocationPages(
   city?: string,
   serviceType?: string
 ): Promise<LocationPage[]> {
-  let constraints: QueryConstraint[] = []
-  if (city) constraints.push(where('city', '==', city))
-  if (serviceType) constraints.push(where('serviceType', '==', serviceType))
-  const q = query(locationPagesCol(), ...constraints)
-  const snap = await getDocs(q)
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as LocationPage)
+  try {
+    let constraints: QueryConstraint[] = []
+    if (city) constraints.push(where('city', '==', city))
+    if (serviceType) constraints.push(where('serviceType', '==', serviceType))
+    const q = query(locationPagesCol(), ...constraints)
+    const snap = await getDocs(q)
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as LocationPage)
+  } catch (err) {
+    console.error('[getLocationPages] Firestore error:', err)
+    return []
+  }
 }
 
 const applicantsCol = () => collection(db, 'applicants')
 
 export async function createApplicant(data: Omit<Applicant, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
-  const docRef = await addDoc(applicantsCol(), {
-    ...data,
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
-  })
-  return docRef.id
+  try {
+    const docRef = await addDoc(applicantsCol(), {
+      ...data,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    })
+    return docRef.id
+  } catch (err) {
+    console.error('[createApplicant] Firestore error:', err)
+    throw err
+  }
 }
 
 export async function getApplicants(): Promise<Applicant[]> {
@@ -176,9 +245,14 @@ export async function getApplicants(): Promise<Applicant[]> {
 }
 
 export async function getApplicantsByPhone(phone: string): Promise<Applicant[]> {
-  const q = query(applicantsCol(), where('phone', '==', phone), orderBy('createdAt', 'desc'))
-  const snap = await getDocs(q)
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Applicant)
+  try {
+    const q = query(applicantsCol(), where('phone', '==', phone), orderBy('createdAt', 'desc'))
+    const snap = await getDocs(q)
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Applicant)
+  } catch (err) {
+    console.error('[getApplicantsByPhone] Firestore error:', err)
+    return []
+  }
 }
 
 export async function updateApplicant(applicantId: string, data: Partial<Applicant>): Promise<void> {
@@ -385,32 +459,40 @@ export async function getReferralTree(userId: string): Promise<{
 }
 
 export async function getLeaderboard(): Promise<(User & { referralSignups: number })[]> {
-  const snap = await getDocs(query(collection(db, 'users'), orderBy('earningsBalance', 'desc'), limit(50)))
-  return snap.docs.map((d) => {
+  const [leaderSnap, allUserSnap] = await Promise.all([
+    getDocs(query(collection(db, 'users'), orderBy('earningsBalance', 'desc'), limit(50))),
+    getDocs(collection(db, 'users')),
+  ])
+  const signupCounts = new Map<string, number>()
+  allUserSnap.docs.forEach((d) => {
+    const ref = d.data().referredBy
+    if (ref) signupCounts.set(ref, (signupCounts.get(ref) || 0) + 1)
+  })
+  return leaderSnap.docs.map((d) => {
     const data = d.data()
-    return { id: d.id, ...data, referralSignups: 0 }
+    const code = data.referralCode
+    return { id: d.id, ...data, referralSignups: code ? (signupCounts.get(code) || 0) : 0 }
   }) as (User & { referralSignups: number })[]
 }
 
 export async function getTopReferrers(): Promise<{ id: string; name: string; count: number }[]> {
   const snap = await getDocs(collection(db, 'users'))
-  const refMap = new Map<string, number>()
+  const refCounts = new Map<string, number>()
+  const codeToUser = new Map<string, { id: string; name: string }>()
   snap.docs.forEach((d) => {
-    const ref = d.data().referredBy
-    if (ref) refMap.set(ref, (refMap.get(ref) || 0) + 1)
+    const data = d.data()
+    const ref = data.referredBy
+    if (ref) refCounts.set(ref, (refCounts.get(ref) || 0) + 1)
+    const code = data.referralCode
+    if (code) codeToUser.set(code, { id: d.id, name: data.name || 'Anonymous' })
   })
-  const sorted = [...refMap.entries()]
+  return [...refCounts.entries()]
     .sort((a, b) => b[1] - a[1])
     .slice(0, 50)
-  const results: { id: string; name: string; count: number }[] = []
-  for (const [code, count] of sorted) {
-    const userSnap = await getDocs(query(collection(db, 'users'), where('referralCode', '==', code), limit(1)))
-    if (!userSnap.empty) {
-      const u = userSnap.docs[0].data()
-      results.push({ id: userSnap.docs[0].id, name: u.name || 'Anonymous', count })
-    }
-  }
-  return results
+    .map(([code, count]) => {
+      const user = codeToUser.get(code)
+      return { id: user?.id || code, name: user?.name || 'Unknown', count }
+    })
 }
 
 // ── Creator Fund ──

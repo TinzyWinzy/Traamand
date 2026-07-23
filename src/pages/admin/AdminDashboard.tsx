@@ -5,9 +5,8 @@ import {
   UserCircle, UserPlus, TrendingUp, Loader2, ArrowUpRight,
   Clock, CheckCircle, Smartphone,
 } from 'lucide-react'
-import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore'
+import { collection, getDocs, query, where, orderBy, limit, type DocumentData, type QuerySnapshot } from 'firebase/firestore'
 import { db } from '../../firebase/config'
-import { useToastStore } from '../../stores/toastStore'
 import type { Booking, Worker } from '../../types'
 
 export default function AdminDashboard() {
@@ -27,54 +26,52 @@ export default function AdminDashboard() {
     referralEarnings: 0,
   })
   const [recentBookings, setRecentBookings] = useState<Booking[]>([])
+  const [initStatus, setInitStatus] = useState<string | null>(null)
+  const [initLoading, setInitLoading] = useState(false)
   const [loading, setLoading] = useState(true)
-  const addToast = useToastStore((s) => s.addToast)
 
   const fetchStats = useCallback(async () => {
-    try {
-      const [
-        workersSnap, bookingsSnap, usersSnap, applicantsSnap,
-        payoutsSnap, subSnap, verifierSnap, txSnap,
-      ] = await Promise.all([
-        getDocs(collection(db, 'workers')),
-        getDocs(collection(db, 'bookings')),
-        getDocs(query(collection(db, 'users'), where('role', '==', 'client'))),
-        getDocs(collection(db, 'applicants')),
-        getDocs(query(collection(db, 'payouts'), where('status', '==', 'pending'))),
-        getDocs(query(collection(db, 'creatorSubmissions'), where('status', '==', 'pending'))),
-        getDocs(query(collection(db, 'verifierTasks'), where('status', '==', 'open'))),
-        getDocs(query(collection(db, 'transactions'), where('type', 'in', ['referral_bonus', 'referral_grandparent', 'verifier_payout', 'creator_payout']))),
-      ])
-
-      const workers = workersSnap.docs.map((d) => ({ id: d.id, ...d.data() }) as Worker)
-      const bookings = bookingsSnap.docs.map((d) => ({ id: d.id, ...d.data() }) as Booking)
-
-      setStats({
-        totalWorkers: workers.length,
-        verifiedWorkers: workers.filter((w) => w.verificationStatus === 'verified' || w.verificationStatus === 'premium').length,
-        activeBookings: bookings.filter((b) => !['completed', 'cancelled'].includes(b.status)).length,
-        totalBookings: bookings.length,
-        totalClients: usersSnap.size,
-        totalApplicants: applicantsSnap.size,
-        totalUsers: (await getDocs(collection(db, 'users'))).size,
-        revenueMTD: bookings
-          .filter((b) => b.placementFeePaid)
-          .reduce((sum, b) => sum + (b.placementFee || 0), 0),
-        pendingPayouts: payoutsSnap.size,
-        pendingPayoutAmount: payoutsSnap.docs.reduce((s, d) => s + (d.data().amount || 0), 0),
-        pendingSubmissions: subSnap.size,
-        openVerifierTasks: verifierSnap.size,
-        referralEarnings: Math.round(txSnap.docs.reduce((s, d) => s + (d.data().amount || 0), 0) * 100) / 100,
-      })
-
-      const recentQuery = query(collection(db, 'bookings'), orderBy('createdAt', 'desc'), limit(5))
-      const recentSnap = await getDocs(recentQuery)
-      setRecentBookings(recentSnap.docs.map((d) => ({ id: d.id, ...d.data() }) as Booking))
-    } catch {
-      addToast('Failed to load dashboard stats', 'error')
+    async function getSnap(label: string, fn: () => Promise<QuerySnapshot<DocumentData>>) {
+      try { return await fn() } catch {
+        console.error(`[AdminDashboard] Failed to load ${label}`)
+        return null
+      }
     }
+
+    const workersSnap = await getSnap('workers', () => getDocs(collection(db, 'workers')))
+    const bookingsSnap = await getSnap('bookings', () => getDocs(collection(db, 'bookings')))
+    const usersSnap = await getSnap('clients', () => getDocs(query(collection(db, 'users'), where('role', '==', 'client'))))
+    const applicantsSnap = await getSnap('applicants', () => getDocs(collection(db, 'applicants')))
+    const payoutsSnap = await getSnap('payouts', () => getDocs(query(collection(db, 'payouts'), where('status', '==', 'pending'))))
+    const subSnap = await getSnap('submissions', () => getDocs(query(collection(db, 'creatorSubmissions'), where('status', '==', 'pending'))))
+    const verifierSnap = await getSnap('verifierTasks', () => getDocs(query(collection(db, 'verifierTasks'), where('status', '==', 'open'))))
+    const txSnap = await getSnap('transactions', () => getDocs(query(collection(db, 'transactions'), where('type', 'in', ['referral_bonus', 'referral_grandparent', 'verifier_payout', 'creator_payout']))))
+
+    const workers: Worker[] = workersSnap ? workersSnap.docs.map((d) => ({ id: d.id, ...d.data() }) as Worker) : []
+    const bookings: Booking[] = bookingsSnap ? bookingsSnap.docs.map((d) => ({ id: d.id, ...d.data() }) as Booking) : []
+
+    setStats({
+      totalWorkers: workers.length,
+      verifiedWorkers: workers.filter((w) => w.verificationStatus === 'verified' || w.verificationStatus === 'premium').length,
+      activeBookings: bookings.filter((b) => !['completed', 'cancelled'].includes(b.status)).length,
+      totalBookings: bookings.length,
+      totalClients: usersSnap?.size ?? 0,
+      totalApplicants: applicantsSnap?.size ?? 0,
+      totalUsers: (await getSnap('allUsers', () => getDocs(collection(db, 'users'))))?.size ?? 0,
+      revenueMTD: bookings
+        .filter((b) => b.placementFeePaid)
+        .reduce((sum, b) => sum + (b.placementFee || 0), 0),
+      pendingPayouts: payoutsSnap?.size ?? 0,
+      pendingPayoutAmount: payoutsSnap?.docs.reduce((s, d) => s + (d.data().amount || 0), 0) ?? 0,
+      pendingSubmissions: subSnap?.size ?? 0,
+      openVerifierTasks: verifierSnap?.size ?? 0,
+      referralEarnings: txSnap ? Math.round(txSnap.docs.reduce((s, d) => s + (d.data().amount || 0), 0) * 100) / 100 : 0,
+    })
+
+    const recentSnap = await getSnap('recentBookings', () => getDocs(query(collection(db, 'bookings'), orderBy('createdAt', 'desc'), limit(5))))
+    setRecentBookings(recentSnap ? recentSnap.docs.map((d) => ({ id: d.id, ...d.data() }) as Booking) : [])
     setLoading(false)
-  }, [addToast])
+  }, [])
 
   useEffect(() => {
     fetchStats()
@@ -232,6 +229,35 @@ export default function AdminDashboard() {
               ))}
             </div>
           )}
+        </div>
+
+        {/* System Tools */}
+        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 className="text-lg font-bold text-slate-900 mb-4">System Tools</h2>
+          <button
+            onClick={async () => {
+              setInitLoading(true)
+              setInitStatus(null)
+              try {
+                const { getFunctions, httpsCallable } = await import('firebase/functions')
+                const fn = httpsCallable(getFunctions(), 'initializeAdminUsers')
+                const res = await fn()
+                setInitStatus('done')
+                console.log('[initializeAdminUsers]', res.data)
+              } catch (e) {
+                setInitStatus('error')
+                console.error('[initializeAdminUsers]', e)
+              }
+              setInitLoading(false)
+            }}
+            disabled={initLoading}
+            className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-50"
+          >
+            {initLoading ? 'Running...' : 'Initialize Admin Users'}
+          </button>
+          {initStatus === 'done' && <p className="mt-2 text-xs text-green-600">Done. Check console for details.</p>}
+          {initStatus === 'error' && <p className="mt-2 text-xs text-red-600">Failed. Check console for details.</p>}
+          <p className="mt-1 text-xs text-slate-400">Syncs admin emails from code to Firestore auth claims.</p>
         </div>
       </div>
     </div>
